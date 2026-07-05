@@ -29,7 +29,6 @@ services:
       TZ: UTC
       PGTZ: UTC
     ports:
-      # 5432 on this host is taken by another project's postgres
       - "5433:5432"
     volumes:
       - price_tracker_pg:/var/lib/postgresql
@@ -46,7 +45,6 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@local.dev
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      # 5050 is taken by the CleanArt pgadmin
       - "5051:80"
     volumes:
       - price_tracker_pgadmin:/var/lib/pgadmin
@@ -59,10 +57,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /home/dima/.local/share/docker-volumes/price_tracker_pg
+      device: ${DOCKER_VOLUMES_DIR}/price_tracker_pg
   price_tracker_pgadmin:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/dima/.local/share/docker-volumes/price_tracker_pgadmin
+      device: ${DOCKER_VOLUMES_DIR}/price_tracker_pgadmin
