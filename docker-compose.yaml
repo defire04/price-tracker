@@ -1,0 +1,48 @@
+services:
+  app:
+    build: .
+    container_name: price_tracker_app
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/price_tracker
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18
+    container_name: price_tracker_postgres
+    environment:
+      POSTGRES_DB: price_tracker
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      # 5432 on this host is taken by another project's postgres
+      - "5433:5432"
+    volumes:
+      - price_tracker_pg:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d price_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  price_tracker_pg:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/dima/.local/share/docker-volumes/price_tracker_pg
