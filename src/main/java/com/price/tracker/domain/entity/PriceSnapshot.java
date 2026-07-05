@@ -36,7 +36,6 @@ public class PriceSnapshot {
     @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
-    // Crossed-out (pre-discount) price if the shop shows one
     @Column(name = "regular_price", precision = 12, scale = 2)
     private BigDecimal regularPrice;
 

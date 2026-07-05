@@ -48,18 +48,15 @@ public class TrackedItem {
     @Column(name = "site", nullable = false, length = 32)
     private Site site;
 
-    // NULL means a one-size product
     @Column(name = "size_label", length = 64)
     private String sizeLabel;
 
     @Column(name = "title", nullable = false, length = 512)
     private String title;
 
-    // User-defined name; falls back to the product title
     @Column(name = "display_name", length = 128)
     private String displayName;
 
-    // Price at the moment tracking was created; fallback base for DISCOUNT_PERCENT
     @Column(name = "original_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal originalPrice;
 

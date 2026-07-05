@@ -12,9 +12,13 @@ public interface TrackingService {
 
     List<TrackedItem> listActive(long telegramChatId);
 
+    List<TrackedItem> listInactive(long telegramChatId);
+
     TrackingDetails details(long telegramChatId, long itemId);
 
     void rename(long telegramChatId, long itemId, String newName);
 
     void deactivate(long telegramChatId, long itemId);
+
+    void resume(long telegramChatId, long itemId);
 }

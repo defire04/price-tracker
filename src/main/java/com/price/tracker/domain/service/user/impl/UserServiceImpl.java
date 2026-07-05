@@ -4,6 +4,7 @@ import com.price.tracker.domain.entity.User;
 import com.price.tracker.domain.model.TelegramProfile;
 import com.price.tracker.domain.repository.UserRepository;
 import com.price.tracker.domain.service.user.UserService;
+import com.price.tracker.util.BotLanguage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,23 @@ public class UserServiceImpl implements UserService {
         user.setLanguageCode(profile.languageCode());
         user.setLastSeenAt(Instant.now());
         return user;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String resolveLanguage(long telegramChatId) {
+        return userRepository.findByTelegramChatId(telegramChatId)
+                .map(user -> BotLanguage.resolve(user.getPreferredLanguage(), user.getLanguageCode()))
+                .orElse(BotLanguage.UKRAINIAN);
+    }
+
+    @Override
+    @Transactional
+    public void setPreferredLanguage(long telegramChatId, String language) {
+        if (!BotLanguage.SUPPORTED.contains(language)) {
+            return;
+        }
+        registerIfAbsent(telegramChatId).setPreferredLanguage(language);
     }
 
     private User createUser(long telegramChatId) {

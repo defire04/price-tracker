@@ -63,12 +63,27 @@ public class TrackingServiceImpl implements TrackingService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TrackedItem> listInactive(long telegramChatId) {
+        return trackedItemRepository.findTop20ByUserTelegramChatIdAndActiveFalseOrderByIdDesc(telegramChatId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public TrackingDetails details(long telegramChatId, long itemId) {
         TrackedItem item = trackedItemRepository.findByIdAndChatIdWithEvents(itemId, telegramChatId)
-                .filter(TrackedItem::isActive)
                 .orElseThrow(() -> new TrackingNotFoundException(itemId));
         PriceSnapshot lastSnapshot = priceSnapshotRepository.findTopByItemIdOrderByCheckedAtDesc(itemId).orElse(null);
         return new TrackingDetails(item, lastSnapshot);
+    }
+
+    @Override
+    @Transactional
+    public void resume(long telegramChatId, long itemId) {
+        TrackedItem item = trackedItemRepository.findByIdAndChatIdWithEvents(itemId, telegramChatId)
+                .filter(trackedItem -> !trackedItem.isActive())
+                .orElseThrow(() -> new TrackingNotFoundException(itemId));
+        item.setActive(true);
+        item.getEvents().forEach(event -> event.setActive(true));
     }
 
     private static final int MAX_DISPLAY_NAME_LENGTH = 128;

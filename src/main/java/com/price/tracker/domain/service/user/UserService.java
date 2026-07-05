@@ -8,4 +8,8 @@ public interface UserService {
     User registerIfAbsent(long telegramChatId);
 
     User registerOrUpdate(long telegramChatId, TelegramProfile profile);
+
+    String resolveLanguage(long telegramChatId);
+
+    void setPreferredLanguage(long telegramChatId, String language);
 }

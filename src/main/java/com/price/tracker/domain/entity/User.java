@@ -37,6 +37,10 @@ public class User {
     @Column(name = "language_code", length = 8)
     private String languageCode;
 
+    // Explicit choice from the bot menu; overrides the Telegram client language
+    @Column(name = "preferred_language", length = 8)
+    private String preferredLanguage;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

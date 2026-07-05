@@ -9,68 +9,83 @@ import com.price.tracker.domain.model.SizeOffer;
 import com.price.tracker.domain.service.tracking.TrackingDetails;
 import com.price.tracker.util.KyivTime;
 import com.price.tracker.util.PriceFormat;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class TrackerMessages {
+@Component
+@RequiredArgsConstructor
+public class TrackerMessages {
 
     private static final int SIZE_BUTTONS_PER_ROW = 4;
     private static final int ITEM_BUTTON_TITLE_LENGTH = 32;
 
-    private TrackerMessages() {
+    private final MessageSource messageSource;
+
+    public String homeText(Locale locale) {
+        return text(locale, "home.text");
     }
 
-    public static String homeText() {
-        return """
-                Привіт! Я стежу за цінами та наявністю товарів на Intertop.
-
-                Що робимо?""";
-    }
-
-    public static InlineKeyboardMarkup homeKeyboard() {
+    public InlineKeyboardMarkup homeKeyboard(Locale locale) {
         return new InlineKeyboardMarkup(List.of(
-                new InlineKeyboardRow(button("➕ Додати відстеження", "m:add")),
-                new InlineKeyboardRow(button("📋 Мої відстеження", "m:list")),
-                new InlineKeyboardRow(button("ℹ Довідка", "m:help"))));
+                new InlineKeyboardRow(button(text(locale, "btn.add"), "m:add")),
+                new InlineKeyboardRow(button(text(locale, "btn.list"), "m:list"), button(text(locale, "btn.history"), "m:hist")),
+                new InlineKeyboardRow(button(text(locale, "btn.help"), "m:help"), button(text(locale, "btn.lang"), "m:lang"))));
     }
 
-    public static String helpText() {
-        return """
-                Як це працює:
-                1. Тисни «➕ Додати відстеження» і надішли посилання на товар з intertop.ua
-                2. Обери розмір і події: поява в наявності, зниження/зростання ціни, знижка до порогу
-                3. Я перевіряю сайт кілька разів на день і надішлю повідомлення, коли щось зміниться
-
-                Відстеження живуть у «📋 Мої відстеження» — там можна перейменувати або зупинити.""";
+    public String helpText(Locale locale) {
+        return text(locale, "help.text");
     }
 
-    public static InlineKeyboardMarkup backToMenuKeyboard() {
-        return new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button("⬅ Меню", "m:home"))));
+    public InlineKeyboardMarkup backToMenuKeyboard(Locale locale) {
+        return new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home"))));
     }
 
-    public static String urlPrompt() {
-        return "Надішли посилання на товар з intertop.ua:";
+    public String languagePrompt(Locale locale) {
+        return text(locale, "lang.prompt");
     }
 
-    public static String productPreview(ProductSnapshot product) {
-        StringBuilder text = new StringBuilder(product.title()).append("\n");
-        text.append("Ціна: ").append(PriceFormat.format(product.price()));
+    public InlineKeyboardMarkup languageKeyboard(Locale locale) {
+        return new InlineKeyboardMarkup(List.of(
+                new InlineKeyboardRow(button(text(locale, "lang.uk"), "m:lang:uk")),
+                new InlineKeyboardRow(button(text(locale, "lang.ru"), "m:lang:ru")),
+                new InlineKeyboardRow(button(text(locale, "lang.en"), "m:lang:en")),
+                new InlineKeyboardRow(button(text(locale, "btn.back"), "m:home"))));
+    }
+
+    public String urlPrompt(Locale locale) {
+        return text(locale, "url.prompt");
+    }
+
+    public String urlUnsupported(Locale locale) {
+        return text(locale, "url.unsupported");
+    }
+
+    public String urlParseFailed(Locale locale) {
+        return text(locale, "url.parseFailed");
+    }
+
+    public String productPreview(Locale locale, ProductSnapshot product) {
+        StringBuilder result = new StringBuilder(product.title()).append("\n");
+        result.append(text(locale, "price.label", PriceFormat.format(product.price())));
         if (product.regularPrice() != null) {
             int discount = PriceFormat.percentOf(product.regularPrice().subtract(product.price()), product.regularPrice());
-            text.append(" (було ").append(PriceFormat.format(product.regularPrice()))
-                    .append(", -").append(discount).append("%)");
+            result.append(" ").append(text(locale, "price.was", PriceFormat.format(product.regularPrice()), discount));
         }
-        text.append("\n\nОбери розмір (✗ — немає в наявності):");
-        return text.toString();
+        result.append("\n\n").append(text(locale, "choose.size"));
+        return result.toString();
     }
 
-    public static InlineKeyboardMarkup sizeKeyboard(List<SizeOffer> sizes) {
+    public InlineKeyboardMarkup sizeKeyboard(Locale locale, List<SizeOffer> sizes) {
         List<InlineKeyboardRow> rows = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
         for (int sizeIndex = 0; sizeIndex < sizes.size(); sizeIndex++) {
@@ -85,101 +100,144 @@ public final class TrackerMessages {
         if (!currentRow.isEmpty()) {
             rows.add(currentRow);
         }
-        rows.add(new InlineKeyboardRow(button("⬅ Меню", "m:home")));
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home")));
         return new InlineKeyboardMarkup(rows);
     }
 
-    public static String eventsPrompt(String sizeLabel) {
-        return "Розмір: " + displaySize(sizeLabel) + "\nОбери події (можна декілька):";
+    public String eventsPrompt(Locale locale, String sizeLabel) {
+        return text(locale, "events.prompt", displaySize(locale, sizeLabel));
     }
 
-    public static InlineKeyboardMarkup eventsKeyboard(Set<TrackedEventType> selectedEvents) {
+    public String eventsPromptWithWarning(Locale locale, String sizeLabel) {
+        return eventsPrompt(locale, sizeLabel) + "\n\n" + text(locale, "events.atLeastOne");
+    }
+
+    public InlineKeyboardMarkup eventsKeyboard(Locale locale, Set<TrackedEventType> selectedEvents) {
         return new InlineKeyboardMarkup(List.of(
-                new InlineKeyboardRow(eventButton(TrackedEventType.RESTOCK, "R", selectedEvents)),
-                new InlineKeyboardRow(eventButton(TrackedEventType.PRICE_DROP, "PD", selectedEvents)),
-                new InlineKeyboardRow(eventButton(TrackedEventType.PRICE_INCREASE, "PI", selectedEvents)),
-                new InlineKeyboardRow(eventButton(TrackedEventType.DISCOUNT_PERCENT, "DP", selectedEvents)),
-                new InlineKeyboardRow(button("⬅ Назад", "w:back:sz"), button("✅ Готово", "w:ok"))));
+                new InlineKeyboardRow(eventButton(locale, TrackedEventType.RESTOCK, "R", selectedEvents)),
+                new InlineKeyboardRow(eventButton(locale, TrackedEventType.PRICE_DROP, "PD", selectedEvents)),
+                new InlineKeyboardRow(eventButton(locale, TrackedEventType.PRICE_INCREASE, "PI", selectedEvents)),
+                new InlineKeyboardRow(eventButton(locale, TrackedEventType.DISCOUNT_PERCENT, "DP", selectedEvents)),
+                new InlineKeyboardRow(button(text(locale, "btn.back"), "w:back:sz"), button(text(locale, "btn.done"), "w:ok"))));
     }
 
-    public static String thresholdPrompt() {
-        return "Введи поріг знижки у відсотках, наприклад 30:";
+    public String thresholdPrompt(Locale locale) {
+        return text(locale, "threshold.prompt");
     }
 
-    public static InlineKeyboardMarkup thresholdKeyboard() {
-        return new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button("⬅ Назад", "w:back:ev"))));
+    public String thresholdInvalid(Locale locale, int min, int max) {
+        return thresholdPrompt(locale) + "\n\n" + text(locale, "threshold.invalid", min, max);
     }
 
-    public static String trackingCreated(TrackedItem item) {
-        return "✅ Стежу!\n"
-                + item.displayTitle() + sizeSuffix(item.getSizeLabel()) + "\n"
-                + "Події: " + formatEvents(item);
+    public InlineKeyboardMarkup thresholdKeyboard(Locale locale) {
+        return new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button(text(locale, "btn.back"), "w:back:ev"))));
     }
 
-    public static InlineKeyboardMarkup trackingCreatedKeyboard() {
+    public String sessionExpired(Locale locale) {
+        return text(locale, "session.expired");
+    }
+
+    public String trackingCreated(Locale locale, TrackedItem item) {
+        return text(locale, "created.title") + "\n"
+                + item.displayTitle() + sizeSuffix(locale, item.getSizeLabel()) + "\n"
+                + text(locale, "events.label", formatEvents(locale, item));
+    }
+
+    public InlineKeyboardMarkup trackingCreatedKeyboard(Locale locale) {
         return new InlineKeyboardMarkup(List.of(
-                new InlineKeyboardRow(button("➕ Додати ще", "m:add"), button("📋 Мої відстеження", "m:list")),
-                new InlineKeyboardRow(button("🏠 Меню", "m:home"))));
+                new InlineKeyboardRow(button(text(locale, "btn.addMore"), "m:add"), button(text(locale, "btn.list"), "m:list")),
+                new InlineKeyboardRow(button(text(locale, "btn.menu"), "m:home"))));
     }
 
-    public static String menuListText(List<TrackedItem> items) {
+    public String menuListText(Locale locale, List<TrackedItem> items) {
         if (items.isEmpty()) {
-            return "Активних відстежень немає.";
+            return text(locale, "list.empty");
         }
-        return "📋 Твої відстеження (" + items.size() + ").\nОбери, щоб побачити деталі:";
+        return text(locale, "list.header", items.size());
     }
 
-    public static InlineKeyboardMarkup menuListKeyboard(List<TrackedItem> items) {
+    public InlineKeyboardMarkup menuListKeyboard(Locale locale, List<TrackedItem> items) {
         List<InlineKeyboardRow> rows = items.stream()
                 .map(item -> new InlineKeyboardRow(button(menuItemButtonLabel(item), "m:item:" + item.getId())))
                 .collect(Collectors.toCollection(ArrayList::new));
-        rows.add(new InlineKeyboardRow(button("➕ Додати", "m:add"), button("🔄 Оновити", "m:list")));
-        rows.add(new InlineKeyboardRow(button("🏠 Меню", "m:home")));
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.addShort"), "m:add"), button(text(locale, "btn.refresh"), "m:list")));
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.menu"), "m:home")));
         return new InlineKeyboardMarkup(rows);
     }
 
-    public static String menuItemText(TrackingDetails details) {
+    public String historyListText(Locale locale, List<TrackedItem> items) {
+        if (items.isEmpty()) {
+            return text(locale, "history.empty");
+        }
+        return text(locale, "history.header", items.size());
+    }
+
+    public InlineKeyboardMarkup historyListKeyboard(Locale locale, List<TrackedItem> items) {
+        List<InlineKeyboardRow> rows = items.stream()
+                .map(item -> new InlineKeyboardRow(button(menuItemButtonLabel(item), "m:item:" + item.getId())))
+                .collect(Collectors.toCollection(ArrayList::new));
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.menu"), "m:home")));
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    public String menuItemText(Locale locale, TrackingDetails details) {
         TrackedItem item = details.item();
         PriceSnapshot lastSnapshot = details.lastSnapshot();
-        StringBuilder text = new StringBuilder(item.displayTitle())
-                .append(sizeSuffix(item.getSizeLabel())).append("\n");
-        if (lastSnapshot != null) {
-            text.append("Ціна: ").append(PriceFormat.format(lastSnapshot.getPrice()));
-            if (lastSnapshot.getRegularPrice() != null) {
-                text.append(" (було ").append(PriceFormat.format(lastSnapshot.getRegularPrice())).append(")");
-            }
-            text.append("\nНаявність: ").append(lastSnapshot.isInStock() ? "✅ є" : "❌ немає").append("\n");
-            text.append("Перевірено: ").append(KyivTime.format(lastSnapshot.getCheckedAt())).append("\n");
+        StringBuilder result = new StringBuilder(item.displayTitle())
+                .append(sizeSuffix(locale, item.getSizeLabel())).append("\n");
+        if (!item.isActive()) {
+            result.append(text(locale, "item.stopped")).append("\n");
         }
-        text.append("Події: ").append(formatEvents(item)).append("\n");
-        text.append(item.getUrl());
-        return text.toString();
+        if (lastSnapshot != null) {
+            result.append(text(locale, "price.label", PriceFormat.format(lastSnapshot.getPrice())));
+            if (lastSnapshot.getRegularPrice() != null) {
+                result.append(" ").append(text(locale, "price.wasShort", PriceFormat.format(lastSnapshot.getRegularPrice())));
+            }
+            String stock = text(locale, lastSnapshot.isInStock() ? "item.stock.in" : "item.stock.out");
+            result.append("\n").append(text(locale, "item.stock", stock)).append("\n");
+            result.append(text(locale, "item.checked", KyivTime.format(lastSnapshot.getCheckedAt()))).append("\n");
+        }
+        result.append(text(locale, "events.label", formatEvents(locale, item))).append("\n");
+        result.append(item.getUrl());
+        return result.toString();
     }
 
-    public static InlineKeyboardMarkup menuItemKeyboard(long itemId) {
+    public InlineKeyboardMarkup menuItemKeyboard(Locale locale, TrackedItem item) {
+        if (!item.isActive()) {
+            return new InlineKeyboardMarkup(List.of(
+                    new InlineKeyboardRow(button(text(locale, "btn.resume"), "m:res:" + item.getId())),
+                    new InlineKeyboardRow(button(text(locale, "btn.back"), "m:hist"))));
+        }
         return new InlineKeyboardMarkup(List.of(
-                new InlineKeyboardRow(button("✏ Перейменувати", "m:ren:" + itemId), button("⏹ Зупинити", "m:stop:" + itemId)),
-                new InlineKeyboardRow(button("⬅ Назад", "m:list"))));
+                new InlineKeyboardRow(button(text(locale, "btn.rename"), "m:ren:" + item.getId()), button(text(locale, "btn.stop"), "m:stop:" + item.getId())),
+                new InlineKeyboardRow(button(text(locale, "btn.back"), "m:list"))));
     }
 
-    public static String renamePrompt(TrackedItem item) {
-        return "Поточна назва:\n" + item.displayTitle() + "\n\nНадішли нову назву:";
+    public String renamePrompt(Locale locale, TrackedItem item) {
+        return text(locale, "rename.prompt", item.displayTitle());
     }
 
-    public static InlineKeyboardMarkup renameKeyboard(long itemId) {
-        return new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button("⬅ Назад", "m:item:" + itemId))));
+    public InlineKeyboardMarkup renameKeyboard(Locale locale, long itemId) {
+        return new InlineKeyboardMarkup(List.of(new InlineKeyboardRow(button(text(locale, "btn.back"), "m:item:" + itemId))));
     }
 
-    public static String eventLabel(TrackedEventType eventType) {
-        return switch (eventType) {
-            case RESTOCK -> "поява в наявності";
-            case PRICE_DROP -> "зниження ціни";
-            case PRICE_INCREASE -> "зростання ціни";
-            case DISCOUNT_PERCENT -> "знижка до порогу";
-        };
+    public String stopUsage(Locale locale) {
+        return text(locale, "stop.usage");
     }
 
-    private static String menuItemButtonLabel(TrackedItem item) {
+    public String stopDone(Locale locale) {
+        return text(locale, "stop.done");
+    }
+
+    public String stopNotFound(Locale locale) {
+        return text(locale, "stop.notFound");
+    }
+
+    private String text(Locale locale, String key, Object... args) {
+        return messageSource.getMessage(key, args, locale);
+    }
+
+    private String menuItemButtonLabel(TrackedItem item) {
         String title = item.displayTitle();
         if (title.length() > ITEM_BUTTON_TITLE_LENGTH) {
             title = title.substring(0, ITEM_BUTTON_TITLE_LENGTH) + "…";
@@ -188,36 +246,37 @@ public final class TrackerMessages {
         return title + size;
     }
 
-    private static String formatEvents(TrackedItem item) {
+    private String formatEvents(Locale locale, TrackedItem item) {
         return item.getEvents().stream()
-                .filter(TrackedItemEvent::isActive)
-                .map(event -> eventDisplay(event, item))
+                .filter(event -> event.isActive() || !item.isActive())
+                .map(event -> eventDisplay(locale, event, item))
                 .collect(Collectors.joining(", "));
     }
 
-    private static String eventDisplay(TrackedItemEvent event, TrackedItem item) {
+    private String eventDisplay(Locale locale, TrackedItemEvent event, TrackedItem item) {
         if (event.getEventType() == TrackedEventType.DISCOUNT_PERCENT && item.getDiscountThreshold() != null) {
-            return "знижка ≥ " + item.getDiscountThreshold().stripTrailingZeros().toPlainString() + "%";
+            return text(locale, "event.discountThreshold", item.getDiscountThreshold().stripTrailingZeros().toPlainString());
         }
-        return eventLabel(event.getEventType());
+        return text(locale, "event." + event.getEventType().name());
     }
 
-    private static String sizeSuffix(String sizeLabel) {
-        return SizeOffer.ONE_SIZE_LABEL.equals(sizeLabel) ? "" : " — розмір " + sizeLabel;
+    private String sizeSuffix(Locale locale, String sizeLabel) {
+        return SizeOffer.ONE_SIZE_LABEL.equals(sizeLabel) ? "" : " " + text(locale, "size.suffix", sizeLabel);
     }
 
-    private static String displaySize(String sizeLabel) {
-        return SizeOffer.ONE_SIZE_LABEL.equals(sizeLabel) ? "єдиний" : sizeLabel;
+    private String displaySize(Locale locale, String sizeLabel) {
+        return SizeOffer.ONE_SIZE_LABEL.equals(sizeLabel) ? text(locale, "size.one") : sizeLabel;
     }
 
-    private static InlineKeyboardButton eventButton(TrackedEventType eventType,
-                                                    String code,
-                                                    Set<TrackedEventType> selectedEvents) {
+    private InlineKeyboardButton eventButton(Locale locale,
+                                             TrackedEventType eventType,
+                                             String code,
+                                             Set<TrackedEventType> selectedEvents) {
         String prefix = selectedEvents.contains(eventType) ? "✅ " : "";
-        return button(prefix + eventLabel(eventType), "w:ev:" + code);
+        return button(prefix + text(locale, "event." + eventType.name()), "w:ev:" + code);
     }
 
-    private static InlineKeyboardButton button(String text, String callbackData) {
-        return InlineKeyboardButton.builder().text(text).callbackData(callbackData).build();
+    private InlineKeyboardButton button(String buttonText, String callbackData) {
+        return InlineKeyboardButton.builder().text(buttonText).callbackData(callbackData).build();
     }
 }

@@ -19,10 +19,14 @@ public class CallbackDispatcher {
     private static final String MENU_HOME = "m:home";
     private static final String MENU_ADD = "m:add";
     private static final String MENU_HELP = "m:help";
+    private static final String MENU_LANG = "m:lang";
+    private static final String MENU_LANG_PREFIX = "m:lang:";
     private static final String MENU_LIST = "m:list";
     private static final String MENU_ITEM_PREFIX = "m:item:";
     private static final String MENU_STOP_PREFIX = "m:stop:";
     private static final String MENU_RENAME_PREFIX = "m:ren:";
+    private static final String MENU_HISTORY = "m:hist";
+    private static final String MENU_RESUME_PREFIX = "m:res:";
 
     private final TrackWizardFlow wizardFlow;
     private final TrackingMenuFlow menuFlow;
@@ -51,6 +55,10 @@ public class CallbackDispatcher {
             wizardFlow.startAwaitUrl(chatId, messageId);
         } else if (MENU_HELP.equals(data)) {
             menuFlow.showHelp(chatId, messageId);
+        } else if (data.startsWith(MENU_LANG_PREFIX)) {
+            menuFlow.setLanguage(chatId, messageId, data.substring(MENU_LANG_PREFIX.length()));
+        } else if (MENU_LANG.equals(data)) {
+            menuFlow.showLanguageMenu(chatId, messageId);
         } else if (MENU_LIST.equals(data)) {
             wizardFlow.abort(chatId);
             menuFlow.showList(chatId, messageId);
@@ -60,6 +68,11 @@ public class CallbackDispatcher {
             menuFlow.stopItem(chatId, messageId, parseNumber(data.substring(MENU_STOP_PREFIX.length())));
         } else if (data.startsWith(MENU_RENAME_PREFIX)) {
             menuFlow.askRename(chatId, messageId, parseNumber(data.substring(MENU_RENAME_PREFIX.length())));
+        } else if (MENU_HISTORY.equals(data)) {
+            wizardFlow.abort(chatId);
+            menuFlow.showHistory(chatId, messageId);
+        } else if (data.startsWith(MENU_RESUME_PREFIX)) {
+            menuFlow.resumeItem(chatId, messageId, parseNumber(data.substring(MENU_RESUME_PREFIX.length())));
         }
     }
 

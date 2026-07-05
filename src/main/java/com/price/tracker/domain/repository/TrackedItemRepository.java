@@ -18,6 +18,8 @@ public interface TrackedItemRepository extends JpaRepository<TrackedItem, Long> 
             order by i.id""")
     List<TrackedItem> findActiveByChatIdWithEvents(long telegramChatId);
 
+    List<TrackedItem> findTop20ByUserTelegramChatIdAndActiveFalseOrderByIdDesc(long telegramChatId);
+
     @Query("""
             select i from TrackedItem i join fetch i.events
             where i.id = :itemId and i.user.telegramChatId = :telegramChatId""")
