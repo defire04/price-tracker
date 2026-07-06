@@ -3,6 +3,7 @@ package com.price.tracker.interfaces.telegram.view;
 import com.price.tracker.domain.entity.PriceSnapshot;
 import com.price.tracker.domain.entity.TrackedItem;
 import com.price.tracker.domain.entity.TrackedItemEvent;
+import com.price.tracker.domain.enums.Site;
 import com.price.tracker.domain.enums.TrackedEventType;
 import com.price.tracker.domain.model.ProductSnapshot;
 import com.price.tracker.domain.model.SizeOffer;
@@ -17,6 +18,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -43,7 +45,7 @@ public class TrackerMessages {
     }
 
     public String helpText(Locale locale) {
-        return text(locale, "help.text");
+        return text(locale, "help.text", supportedSites());
     }
 
     public InlineKeyboardMarkup backToMenuKeyboard(Locale locale) {
@@ -63,11 +65,17 @@ public class TrackerMessages {
     }
 
     public String urlPrompt(Locale locale) {
-        return text(locale, "url.prompt");
+        return text(locale, "url.prompt", supportedSites());
     }
 
     public String urlUnsupported(Locale locale) {
-        return text(locale, "url.unsupported");
+        return text(locale, "url.unsupported", supportedSites());
+    }
+
+    private String supportedSites() {
+        return Arrays.stream(Site.values())
+                .map(Site::getDomain)
+                .collect(Collectors.joining(", "));
     }
 
     public String urlParseFailed(Locale locale) {

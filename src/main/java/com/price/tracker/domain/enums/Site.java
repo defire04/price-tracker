@@ -4,7 +4,9 @@ import java.net.URI;
 import java.util.Optional;
 
 public enum Site {
-    INTERTOP("intertop.ua");
+    INTERTOP("intertop.ua"),
+    ANSWEAR("answear.ua"),
+    STRADIVARIUS("stradivarius.com");
 
     private final String domain;
 

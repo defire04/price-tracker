@@ -6,16 +6,15 @@ import com.price.tracker.domain.enums.Site;
 import com.price.tracker.domain.model.SizeOffer;
 import com.price.tracker.domain.service.parser.SiteParser;
 import com.price.tracker.exception.ProductParsingException;
+import com.price.tracker.infrastructure.client.jsonld.JsonLdProductExtractor;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -23,11 +22,10 @@ import java.util.List;
 public class IntertopParser implements SiteParser {
 
     private static final String NUXT_DATA_SELECTOR = "script#__NUXT_DATA__";
-    private static final String JSON_LD_SELECTOR = "script[type=application/ld+json]";
 
     private final TrackerProperties trackerProperties;
     private final NuxtDataExtractor nuxtDataExtractor;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonLdProductExtractor jsonLdProductExtractor;
 
     @Override
     public Site site() {
@@ -49,7 +47,7 @@ public class IntertopParser implements SiteParser {
     }
 
     ProductSnapshot parse(Document page, String url) {
-        JsonNode productJsonLd = findProductJsonLd(page);
+        JsonNode productJsonLd = jsonLdProductExtractor.findProduct(page);
         List<SizeOffer> sizes = extractSizes(page);
         if (sizes.isEmpty()) {
             sizes = oneSizeFallback(productJsonLd, url);
@@ -79,44 +77,7 @@ public class IntertopParser implements SiteParser {
         if (productJsonLd == null) {
             throw new ProductParsingException("Neither NUXT_DATA sizes nor JSON-LD product found: " + url);
         }
-        JsonNode offer = productJsonLd.path("offers");
-        JsonNode price = offer.path("price");
-        if (!price.isNumber()) {
-            throw new ProductParsingException("JSON-LD offer has no numeric price: " + url);
-        }
-        boolean inStock = offer.path("availability").asText("").endsWith("InStock");
-        return List.of(new SizeOffer(SizeOffer.ONE_SIZE_LABEL, price.decimalValue(), null, inStock));
-    }
-
-    private JsonNode findProductJsonLd(Document page) {
-        for (Element script : page.select(JSON_LD_SELECTOR)) {
-            JsonNode product = findProductNode(script.data());
-            if (product != null) {
-                return product;
-            }
-        }
-        return null;
-    }
-
-    private JsonNode findProductNode(String jsonLd) {
-        try {
-            JsonNode root = objectMapper.readTree(jsonLd);
-            if (isProduct(root)) {
-                return root;
-            }
-            for (JsonNode node : root.path("@graph")) {
-                if (isProduct(node)) {
-                    return node;
-                }
-            }
-        } catch (RuntimeException e) {
-            return null;
-        }
-        return null;
-    }
-
-    private boolean isProduct(JsonNode node) {
-        return "Product".equals(node.path("@type").asText(""));
+        return jsonLdProductExtractor.oneSizeOffers(productJsonLd, url);
     }
 
     private String extractTitle(Document page, JsonNode productJsonLd) {
