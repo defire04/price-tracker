@@ -208,6 +208,30 @@ public class TrackWizardFlow {
                     messages.eventsKeyboard(locale, state.getSelectedEvents()));
             return;
         }
+        if (state.getSelectedEvents().contains(TrackedEventType.PRICE_DROP)) {
+            state.setStep(TrackWizardStep.CHOOSE_DROP_THRESHOLD);
+            replySender.editMessage(chatId, messageId,
+                    messages.dropThresholdPrompt(locale), messages.dropThresholdKeyboard(locale));
+            return;
+        }
+        proceedToDiscountOrFinish(chatId, messageId, state);
+    }
+
+    public void chooseDropThreshold(long chatId, int messageId, int percent) {
+        Optional<TrackWizardState> found = findOrExpire(chatId, messageId);
+        if (found.isEmpty()) {
+            return;
+        }
+        TrackWizardState state = found.get();
+        if (state.getStep() != TrackWizardStep.CHOOSE_DROP_THRESHOLD) {
+            return;
+        }
+        state.setDropThreshold(percent <= 0 ? null : BigDecimal.valueOf(percent));
+        proceedToDiscountOrFinish(chatId, messageId, state);
+    }
+
+    private void proceedToDiscountOrFinish(long chatId, int messageId, TrackWizardState state) {
+        Locale locale = chatLocales.localeOf(chatId);
         if (state.getSelectedEvents().contains(TrackedEventType.DISCOUNT_PERCENT)) {
             state.setStep(TrackWizardStep.AWAIT_THRESHOLD);
             replySender.editMessage(chatId, messageId, messages.thresholdPrompt(locale), messages.thresholdKeyboard(locale));
@@ -278,7 +302,7 @@ public class TrackWizardFlow {
         Locale locale = chatLocales.localeOf(chatId);
         NewTrackingCommand command = new NewTrackingCommand(
                 state.getUrl(), state.getSite(), state.getProduct(),
-                state.getSizeLabel(), state.getSelectedEvents(), discountThreshold);
+                state.getSizeLabel(), state.getSelectedEvents(), discountThreshold, state.getDropThreshold());
         TrackedItem item = trackingService.createTracking(chatId, command);
         wizardStore.remove(chatId);
         replySender.editMessage(chatId, messageId,

@@ -63,6 +63,10 @@ public class TrackedItem {
     @Column(name = "discount_threshold", precision = 5, scale = 2)
     private BigDecimal discountThreshold;
 
+    // Minimal price drop (percent) worth notifying about; null = any drop
+    @Column(name = "drop_threshold", precision = 5, scale = 2)
+    private BigDecimal dropThreshold;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 

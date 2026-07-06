@@ -77,6 +77,14 @@ public class TrackingServiceImpl implements TrackingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PriceSnapshot> priceHistory(long telegramChatId, long itemId) {
+        trackedItemRepository.findByIdAndUserTelegramChatId(itemId, telegramChatId)
+                .orElseThrow(() -> new TrackingNotFoundException(itemId));
+        return priceSnapshotRepository.findAllByItemIdOrderByCheckedAtAsc(itemId);
+    }
+
+    @Override
     @Transactional
     public void resume(long telegramChatId, long itemId) {
         TrackedItem item = trackedItemRepository.findByIdAndChatIdWithEvents(itemId, telegramChatId)
@@ -122,6 +130,7 @@ public class TrackingServiceImpl implements TrackingService {
         item.setTitle(command.product().title());
         item.setOriginalPrice(chosenSize.regularPrice() != null ? chosenSize.regularPrice() : chosenSize.price());
         item.setDiscountThreshold(command.discountThreshold());
+        item.setDropThreshold(command.dropThreshold());
         item.setCreatedAt(now);
         for (TrackedEventType eventType : command.eventTypes()) {
             item.getEvents().add(buildEvent(item, eventType, now));

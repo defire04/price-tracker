@@ -85,10 +85,23 @@ public class ItemCheckProcessor {
 
     private void checkPriceDrop(TrackedItem item, PriceSnapshot previous, SizeOffer current,
                                 ProductSnapshot.AggregateStats stats) {
-        if (current.price().compareTo(previous.getPrice()) < 0) {
-            notify(item, new PriceAlert(item, TrackedEventType.PRICE_DROP, previous.getPrice(), current.price(), null,
-                    current.url(), stats));
+        if (current.price().compareTo(previous.getPrice()) >= 0) {
+            return;
         }
+        if (item.getDropThreshold() != null && dropPercent(previous, current).compareTo(item.getDropThreshold()) < 0) {
+            return;
+        }
+        notify(item, new PriceAlert(item, TrackedEventType.PRICE_DROP, previous.getPrice(), current.price(), null,
+                current.url(), stats));
+    }
+
+    private BigDecimal dropPercent(PriceSnapshot previous, SizeOffer current) {
+        if (previous.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return previous.getPrice().subtract(current.price())
+                .multiply(BigDecimal.valueOf(100))
+                .divide(previous.getPrice(), 2, RoundingMode.HALF_UP);
     }
 
     private void checkPriceIncrease(TrackedItem item, PriceSnapshot previous, SizeOffer current,

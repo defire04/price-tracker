@@ -27,6 +27,9 @@ public record ProductSnapshot(String title,
     }
 
     public record VariantOption(String label, String url, boolean selected) {
+
+        // Rendered with a localized "any" label; resets the group filter
+        public static final String ANY_LABEL = "ANY";
     }
 
     public ProductSnapshot(String title, BigDecimal price, BigDecimal regularPrice, boolean inStock,

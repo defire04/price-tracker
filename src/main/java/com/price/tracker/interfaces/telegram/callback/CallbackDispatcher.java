@@ -16,6 +16,7 @@ public class CallbackDispatcher {
     private static final String WIZARD_SIZE_PAGE_PREFIX = "w:szpg:";
     private static final String WIZARD_VARIANT_PREFIX = "w:vr:";
     private static final String WIZARD_VARIANTS_DONE = "w:vrok";
+    private static final String WIZARD_DROP_THRESHOLD_PREFIX = "w:dt:";
     private static final String WIZARD_EVENT_PREFIX = "w:ev:";
     private static final String WIZARD_CONFIRM = "w:ok";
     private static final String WIZARD_BACK_TO_SIZES = "w:back:sz";
@@ -31,6 +32,8 @@ public class CallbackDispatcher {
     private static final String MENU_RENAME_PREFIX = "m:ren:";
     private static final String MENU_HISTORY = "m:hist";
     private static final String MENU_RESUME_PREFIX = "m:res:";
+    private static final String MENU_CHECK_PREFIX = "m:check:";
+    private static final String MENU_CHART_PREFIX = "m:chart:";
     private static final String ADMIN_MENU = "a:menu";
     private static final String ADMIN_TEST = "a:test";
     private static final String ADMIN_CHECK = "a:check";
@@ -59,6 +62,8 @@ public class CallbackDispatcher {
             wizardFlow.chooseSize(chatId, messageId, (int) parseNumber(data.substring(WIZARD_SIZE_PREFIX.length())));
         } else if (data.startsWith(WIZARD_EVENT_PREFIX)) {
             wizardFlow.toggleEvent(chatId, messageId, data.substring(WIZARD_EVENT_PREFIX.length()));
+        } else if (data.startsWith(WIZARD_DROP_THRESHOLD_PREFIX)) {
+            wizardFlow.chooseDropThreshold(chatId, messageId, (int) parseNumber(data.substring(WIZARD_DROP_THRESHOLD_PREFIX.length())));
         } else if (WIZARD_CONFIRM.equals(data)) {
             wizardFlow.confirm(chatId, messageId);
         } else if (WIZARD_BACK_TO_SIZES.equals(data)) {
@@ -90,6 +95,10 @@ public class CallbackDispatcher {
             menuFlow.showHistory(chatId, messageId);
         } else if (data.startsWith(MENU_RESUME_PREFIX)) {
             menuFlow.resumeItem(chatId, messageId, parseNumber(data.substring(MENU_RESUME_PREFIX.length())));
+        } else if (data.startsWith(MENU_CHECK_PREFIX)) {
+            menuFlow.checkItemNow(chatId, messageId, parseNumber(data.substring(MENU_CHECK_PREFIX.length())));
+        } else if (data.startsWith(MENU_CHART_PREFIX)) {
+            menuFlow.showChart(chatId, messageId, parseNumber(data.substring(MENU_CHART_PREFIX.length())));
         } else if (ADMIN_MENU.equals(data)) {
             adminMenuFlow.showMenu(chatId, messageId);
         } else if (ADMIN_TEST.equals(data)) {

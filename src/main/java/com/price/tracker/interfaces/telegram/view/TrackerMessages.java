@@ -135,7 +135,10 @@ public class TrackerMessages {
             InlineKeyboardRow currentRow = new InlineKeyboardRow();
             for (int optionIndex = 0; optionIndex < options.size(); optionIndex++) {
                 ProductSnapshot.VariantOption option = options.get(optionIndex);
-                String label = (option.selected() ? "✅ " : "") + option.label();
+                String optionLabel = ProductSnapshot.VariantOption.ANY_LABEL.equals(option.label())
+                        ? text(locale, "variant.any")
+                        : option.label();
+                String label = (option.selected() ? "✅ " : "") + optionLabel;
                 currentRow.add(button(label, "w:vr:" + groupIndex + ":" + optionIndex));
                 if (currentRow.size() == VARIANT_BUTTONS_PER_ROW) {
                     rows.add(currentRow);
@@ -248,6 +251,18 @@ public class TrackerMessages {
                 new InlineKeyboardRow(button(text(locale, "btn.back"), "w:back:sz"), button(text(locale, "btn.done"), "w:ok"))));
     }
 
+    public String dropThresholdPrompt(Locale locale) {
+        return text(locale, "dropThreshold.prompt");
+    }
+
+    public InlineKeyboardMarkup dropThresholdKeyboard(Locale locale) {
+        return new InlineKeyboardMarkup(List.of(
+                new InlineKeyboardRow(button(text(locale, "btn.anyDrop"), "w:dt:0")),
+                new InlineKeyboardRow(button("≥ 1%", "w:dt:1"), button("≥ 3%", "w:dt:3"),
+                        button("≥ 5%", "w:dt:5"), button("≥ 10%", "w:dt:10")),
+                new InlineKeyboardRow(button(text(locale, "btn.back"), "w:back:ev"))));
+    }
+
     public String thresholdPrompt(Locale locale) {
         return text(locale, "threshold.prompt");
     }
@@ -337,8 +352,22 @@ public class TrackerMessages {
                     new InlineKeyboardRow(button(text(locale, "btn.back"), "m:hist"))));
         }
         return new InlineKeyboardMarkup(List.of(
+                new InlineKeyboardRow(button(text(locale, "btn.checkNow"), "m:check:" + item.getId()),
+                        button(text(locale, "btn.chart"), "m:chart:" + item.getId())),
                 new InlineKeyboardRow(button(text(locale, "btn.rename"), "m:ren:" + item.getId()), button(text(locale, "btn.stop"), "m:stop:" + item.getId())),
                 new InlineKeyboardRow(button(text(locale, "btn.back"), "m:list"))));
+    }
+
+    public String chartNotEnough(Locale locale) {
+        return text(locale, "chart.notEnough");
+    }
+
+    public String itemChecking(Locale locale) {
+        return text(locale, "item.checking");
+    }
+
+    public String itemCheckFailed(Locale locale) {
+        return text(locale, "item.checkFailed");
     }
 
     public String renamePrompt(Locale locale, TrackedItem item) {
@@ -389,6 +418,9 @@ public class TrackerMessages {
     private String eventDisplay(Locale locale, TrackedItemEvent event, TrackedItem item) {
         if (event.getEventType() == TrackedEventType.DISCOUNT_PERCENT && item.getDiscountThreshold() != null) {
             return text(locale, "event.discountThreshold", item.getDiscountThreshold().stripTrailingZeros().toPlainString());
+        }
+        if (event.getEventType() == TrackedEventType.PRICE_DROP && item.getDropThreshold() != null) {
+            return text(locale, "event.dropThreshold", item.getDropThreshold().stripTrailingZeros().toPlainString());
         }
         return text(locale, "event." + event.getEventType().name());
     }

@@ -1,5 +1,6 @@
 package com.price.tracker.domain.service.tracking;
 
+import com.price.tracker.domain.entity.PriceSnapshot;
 import com.price.tracker.domain.entity.TrackedItem;
 
 import java.util.List;
@@ -15,6 +16,8 @@ public interface TrackingService {
     List<TrackedItem> listInactive(long telegramChatId);
 
     TrackingDetails details(long telegramChatId, long itemId);
+
+    List<PriceSnapshot> priceHistory(long telegramChatId, long itemId);
 
     void rename(long telegramChatId, long itemId, String newName);
 

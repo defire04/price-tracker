@@ -21,6 +21,7 @@ public class TrackWizardState {
     private Site site;
     private ProductSnapshot product;
     private String sizeLabel;
+    private java.math.BigDecimal dropThreshold;
 
     public void initProduct(String url, Site site, ProductSnapshot product) {
         this.url = url;

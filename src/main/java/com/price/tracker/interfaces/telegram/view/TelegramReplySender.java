@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.LinkPreviewOptions;
@@ -46,6 +48,21 @@ public class TelegramReplySender {
         LinkPreviewOptions options = new LinkPreviewOptions();
         options.setIsDisabled(true);
         return options;
+    }
+
+    public Integer sendPhoto(long chatId, byte[] png, String caption, InlineKeyboardMarkup keyboard) {
+        SendPhoto photo = SendPhoto.builder()
+                .chatId(chatId)
+                .photo(new InputFile(new java.io.ByteArrayInputStream(png), "chart.png"))
+                .caption(caption)
+                .replyMarkup(keyboard)
+                .build();
+        try {
+            return telegramClient.execute(photo).getMessageId();
+        } catch (TelegramApiException e) {
+            log.error("Failed to send photo to chat {}", chatId, e);
+            return null;
+        }
     }
 
     public void deleteMessage(long chatId, int messageId) {

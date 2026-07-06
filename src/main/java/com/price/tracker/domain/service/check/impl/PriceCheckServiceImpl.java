@@ -39,6 +39,25 @@ public class PriceCheckServiceImpl implements PriceCheckService {
         log.info("Price check finished");
     }
 
+    @Override
+    public boolean checkItemNow(long itemId) {
+        TrackedItem item = trackedItemRepository.findById(itemId).orElse(null);
+        if (item == null || !item.isActive()) {
+            return false;
+        }
+        SiteParser parser = parserRegistry.parserFor(item.getSite());
+        ProductSnapshot freshProduct;
+        try {
+            freshProduct = parser.fetch(item.getUrl());
+        } catch (Exception e) {
+            log.error("On-demand check failed for item {} url {}", itemId, item.getUrl(), e);
+            adminNotifier.parserFailed(item.getUrl(), e.toString());
+            return false;
+        }
+        processItemSafely(itemId, freshProduct);
+        return true;
+    }
+
     private void checkSite(Site site, Map<String, List<TrackedItem>> itemsByUrl) {
         SiteParser parser = parserRegistry.parserFor(site);
         boolean firstUrl = true;

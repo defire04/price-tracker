@@ -5,5 +5,6 @@ public enum TrackWizardStep {
     CHOOSE_VARIANT,
     CHOOSE_SIZE,
     CHOOSE_EVENTS,
+    CHOOSE_DROP_THRESHOLD,
     AWAIT_THRESHOLD
 }

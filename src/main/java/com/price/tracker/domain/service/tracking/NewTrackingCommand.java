@@ -12,5 +12,6 @@ public record NewTrackingCommand(String url,
                                  ProductSnapshot product,
                                  String sizeLabel,
                                  Set<TrackedEventType> eventTypes,
-                                 BigDecimal discountThreshold) {
+                                 BigDecimal discountThreshold,
+                                 BigDecimal dropThreshold) {
 }
