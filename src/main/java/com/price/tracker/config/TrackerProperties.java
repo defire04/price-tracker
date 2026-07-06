@@ -1,11 +1,14 @@
 package com.price.tracker.config;
 
+import com.price.tracker.domain.enums.Site;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("tracker")
-public record TrackerProperties(Bot bot, Check check, Http http) {
+import java.util.Map;
 
-    public record Bot(boolean enabled, String token) {
+@ConfigurationProperties("tracker")
+public record TrackerProperties(Bot bot, Check check, Http http, Map<Site, String> testUrls) {
+
+    public record Bot(boolean enabled, String token, long adminChatId) {
     }
 
     public record Check(String cron, long jitterMinMs, long jitterMaxMs) {

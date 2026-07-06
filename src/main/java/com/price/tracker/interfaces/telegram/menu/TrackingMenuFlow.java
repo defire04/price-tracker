@@ -5,6 +5,7 @@ import com.price.tracker.domain.service.tracking.TrackingDetails;
 import com.price.tracker.domain.service.tracking.TrackingService;
 import com.price.tracker.domain.service.user.UserService;
 import com.price.tracker.exception.TrackingNotFoundException;
+import com.price.tracker.interfaces.telegram.admin.AdminAccess;
 import com.price.tracker.interfaces.telegram.i18n.ChatLocales;
 import com.price.tracker.interfaces.telegram.view.TelegramReplySender;
 import com.price.tracker.interfaces.telegram.view.TrackerMessages;
@@ -27,6 +28,7 @@ public class TrackingMenuFlow {
     private final TelegramReplySender replySender;
     private final TrackerMessages messages;
     private final ChatLocales chatLocales;
+    private final AdminAccess adminAccess;
     private final ConcurrentHashMap<Long, Integer> menuMessageIdByChat = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, PendingRename> pendingRenameByChat = new ConcurrentHashMap<>();
 
@@ -34,14 +36,16 @@ public class TrackingMenuFlow {
         pendingRenameByChat.remove(chatId);
         deletePreviousMenu(chatId);
         Locale locale = chatLocales.localeOf(chatId);
-        Integer messageId = replySender.sendKeyboard(chatId, messages.homeText(locale), messages.homeKeyboard(locale));
+        Integer messageId = replySender.sendKeyboard(chatId, messages.homeText(locale),
+                messages.homeKeyboard(locale, adminAccess.isAdmin(chatId)));
         rememberMenuMessage(chatId, messageId);
     }
 
     public void showHome(long chatId, int messageId) {
         pendingRenameByChat.remove(chatId);
         Locale locale = chatLocales.localeOf(chatId);
-        replySender.editMessage(chatId, messageId, messages.homeText(locale), messages.homeKeyboard(locale));
+        replySender.editMessage(chatId, messageId, messages.homeText(locale),
+                messages.homeKeyboard(locale, adminAccess.isAdmin(chatId)));
         rememberMenuMessage(chatId, messageId);
     }
 

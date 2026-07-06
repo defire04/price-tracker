@@ -37,11 +37,46 @@ public class TrackerMessages {
         return text(locale, "home.text");
     }
 
-    public InlineKeyboardMarkup homeKeyboard(Locale locale) {
-        return new InlineKeyboardMarkup(List.of(
+    public InlineKeyboardMarkup homeKeyboard(Locale locale, boolean admin) {
+        List<InlineKeyboardRow> rows = new ArrayList<>(List.of(
                 new InlineKeyboardRow(button(text(locale, "btn.add"), "m:add")),
                 new InlineKeyboardRow(button(text(locale, "btn.list"), "m:list"), button(text(locale, "btn.history"), "m:hist")),
                 new InlineKeyboardRow(button(text(locale, "btn.help"), "m:help"), button(text(locale, "btn.lang"), "m:lang"))));
+        if (admin) {
+            rows.add(new InlineKeyboardRow(button(text(locale, "btn.admin"), "a:menu")));
+        }
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    public String adminMenuText(Locale locale) {
+        return text(locale, "admin.title");
+    }
+
+    public InlineKeyboardMarkup adminMenuKeyboard(Locale locale) {
+        return new InlineKeyboardMarkup(List.of(
+                new InlineKeyboardRow(button(text(locale, "btn.adminTest"), "a:test")),
+                new InlineKeyboardRow(button(text(locale, "btn.adminCheck"), "a:check")),
+                new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home"))));
+    }
+
+    public String adminTestRunning(Locale locale, int siteCount) {
+        return text(locale, "admin.test.running", siteCount);
+    }
+
+    public String adminTestReport(Locale locale, String report) {
+        return text(locale, "admin.test.header") + "\n\n" + report;
+    }
+
+    public String adminCheckRunning(Locale locale) {
+        return text(locale, "admin.check.running");
+    }
+
+    public String adminCheckDone(Locale locale) {
+        return text(locale, "admin.check.done");
+    }
+
+    public String adminBusy(Locale locale) {
+        return text(locale, "admin.busy");
     }
 
     public String helpText(Locale locale) {

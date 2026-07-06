@@ -16,6 +16,13 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 @Slf4j
 public class TelegramReplySender {
 
+    /**
+     * Invisible constant-width line (U+2800 braille blanks, not trimmed by Telegram):
+     * keeps menu bubbles and their inline keyboards the same width across screens
+     * instead of resizing to the longest text line of each screen.
+     */
+    private static final String WIDTH_ANCHOR = "\n" + "⠀".repeat(32);
+
     private final TelegramClient telegramClient;
 
     public void sendText(long chatId, String text) {
@@ -23,7 +30,7 @@ public class TelegramReplySender {
     }
 
     public Integer sendKeyboard(long chatId, String text, InlineKeyboardMarkup keyboard) {
-        return send(SendMessage.builder().chatId(chatId).text(text).replyMarkup(keyboard).build());
+        return send(SendMessage.builder().chatId(chatId).text(text + WIDTH_ANCHOR).replyMarkup(keyboard).build());
     }
 
     public void deleteMessage(long chatId, int messageId) {
@@ -38,7 +45,7 @@ public class TelegramReplySender {
         EditMessageText editMessage = EditMessageText.builder()
                 .chatId(chatId)
                 .messageId(messageId)
-                .text(text)
+                .text(text + WIDTH_ANCHOR)
                 .replyMarkup(keyboard)
                 .build();
         try {

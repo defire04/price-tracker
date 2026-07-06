@@ -1,5 +1,6 @@
 package com.price.tracker.interfaces.telegram.callback;
 
+import com.price.tracker.interfaces.telegram.admin.AdminMenuFlow;
 import com.price.tracker.interfaces.telegram.menu.TrackingMenuFlow;
 import com.price.tracker.interfaces.telegram.view.TelegramReplySender;
 import com.price.tracker.interfaces.telegram.wizard.TrackWizardFlow;
@@ -27,9 +28,13 @@ public class CallbackDispatcher {
     private static final String MENU_RENAME_PREFIX = "m:ren:";
     private static final String MENU_HISTORY = "m:hist";
     private static final String MENU_RESUME_PREFIX = "m:res:";
+    private static final String ADMIN_MENU = "a:menu";
+    private static final String ADMIN_TEST = "a:test";
+    private static final String ADMIN_CHECK = "a:check";
 
     private final TrackWizardFlow wizardFlow;
     private final TrackingMenuFlow menuFlow;
+    private final AdminMenuFlow adminMenuFlow;
     private final TelegramReplySender replySender;
 
     public void dispatch(CallbackQuery callback) {
@@ -73,6 +78,12 @@ public class CallbackDispatcher {
             menuFlow.showHistory(chatId, messageId);
         } else if (data.startsWith(MENU_RESUME_PREFIX)) {
             menuFlow.resumeItem(chatId, messageId, parseNumber(data.substring(MENU_RESUME_PREFIX.length())));
+        } else if (ADMIN_MENU.equals(data)) {
+            adminMenuFlow.showMenu(chatId, messageId);
+        } else if (ADMIN_TEST.equals(data)) {
+            adminMenuFlow.runParserTest(chatId, messageId);
+        } else if (ADMIN_CHECK.equals(data)) {
+            adminMenuFlow.runCheckNow(chatId, messageId);
         }
     }
 

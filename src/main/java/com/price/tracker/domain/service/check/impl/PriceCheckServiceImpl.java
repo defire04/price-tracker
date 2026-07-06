@@ -6,6 +6,7 @@ import com.price.tracker.domain.enums.Site;
 import com.price.tracker.domain.entity.TrackedItem;
 import com.price.tracker.domain.repository.TrackedItemRepository;
 import com.price.tracker.domain.service.check.PriceCheckService;
+import com.price.tracker.domain.service.notification.AdminNotifier;
 import com.price.tracker.domain.service.parser.SiteParser;
 import com.price.tracker.domain.service.parser.SiteParserRegistry;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class PriceCheckServiceImpl implements PriceCheckService {
     private final SiteParserRegistry parserRegistry;
     private final ItemCheckProcessor itemCheckProcessor;
     private final TrackerProperties trackerProperties;
+    private final AdminNotifier adminNotifier;
 
     @Override
     public void runCheckCycle() {
@@ -55,6 +57,7 @@ public class PriceCheckServiceImpl implements PriceCheckService {
             freshProduct = parser.fetch(url);
         } catch (Exception e) {
             log.error("Price check failed for url {}", url, e);
+            adminNotifier.parserFailed(url, e.toString());
             return;
         }
         for (TrackedItem item : items) {

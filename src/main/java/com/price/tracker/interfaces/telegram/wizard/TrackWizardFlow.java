@@ -2,6 +2,7 @@ package com.price.tracker.interfaces.telegram.wizard;
 
 import com.price.tracker.domain.entity.TrackedItem;
 import com.price.tracker.domain.enums.TrackedEventType;
+import com.price.tracker.domain.service.notification.AdminNotifier;
 import com.price.tracker.domain.service.tracking.NewTrackingCommand;
 import com.price.tracker.domain.service.tracking.ProductPreview;
 import com.price.tracker.domain.service.tracking.TrackingService;
@@ -38,6 +39,7 @@ public class TrackWizardFlow {
     private final TelegramReplySender replySender;
     private final TrackerMessages messages;
     private final ChatLocales chatLocales;
+    private final AdminNotifier adminNotifier;
 
     public void startAwaitUrl(long chatId, int messageId) {
         Locale locale = chatLocales.localeOf(chatId);
@@ -67,6 +69,7 @@ public class TrackWizardFlow {
             return;
         } catch (ProductParsingException e) {
             log.warn("Product preview failed for {}", url, e);
+            adminNotifier.parserFailed(url, e.toString());
             replySender.sendKeyboard(chatId, messages.urlParseFailed(locale), messages.backToMenuKeyboard(locale));
             return;
         }
