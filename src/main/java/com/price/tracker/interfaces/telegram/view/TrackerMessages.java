@@ -30,6 +30,9 @@ public class TrackerMessages {
 
     private static final int SIZE_BUTTONS_PER_ROW = 4;
     private static final int ITEM_BUTTON_TITLE_LENGTH = 32;
+    // Aggregators return dozens of shop offers - page them instead of one huge keyboard
+    private static final int OFFERS_PER_PAGE = 5;
+    private static final int VARIANT_BUTTONS_PER_ROW = 3;
 
     private final MessageSource messageSource;
 
@@ -118,23 +121,93 @@ public class TrackerMessages {
     }
 
     public String productPreview(Locale locale, ProductSnapshot product) {
+        return previewHeader(locale, product) + "\n\n" + text(locale, "choose.size");
+    }
+
+    public String variantPrompt(Locale locale, ProductSnapshot product) {
+        return previewHeader(locale, product) + "\n\n" + text(locale, "variant.prompt");
+    }
+
+    public InlineKeyboardMarkup variantKeyboard(Locale locale, List<ProductSnapshot.VariantGroup> groups) {
+        List<InlineKeyboardRow> rows = new ArrayList<>();
+        for (int groupIndex = 0; groupIndex < groups.size(); groupIndex++) {
+            List<ProductSnapshot.VariantOption> options = groups.get(groupIndex).options();
+            InlineKeyboardRow currentRow = new InlineKeyboardRow();
+            for (int optionIndex = 0; optionIndex < options.size(); optionIndex++) {
+                ProductSnapshot.VariantOption option = options.get(optionIndex);
+                String label = (option.selected() ? "✅ " : "") + option.label();
+                currentRow.add(button(label, "w:vr:" + groupIndex + ":" + optionIndex));
+                if (currentRow.size() == VARIANT_BUTTONS_PER_ROW) {
+                    rows.add(currentRow);
+                    currentRow = new InlineKeyboardRow();
+                }
+            }
+            if (!currentRow.isEmpty()) {
+                rows.add(currentRow);
+            }
+        }
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.next"), "w:vrok")));
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home")));
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    private String previewHeader(Locale locale, ProductSnapshot product) {
         StringBuilder result = new StringBuilder(product.title()).append("\n");
         result.append(text(locale, "price.label", PriceFormat.format(product.price())));
         if (product.regularPrice() != null) {
             int discount = PriceFormat.percentOf(product.regularPrice().subtract(product.price()), product.regularPrice());
             result.append(" ").append(text(locale, "price.was", PriceFormat.format(product.regularPrice()), discount));
         }
-        result.append("\n\n").append(text(locale, "choose.size"));
+        if (product.stats() != null) {
+            result.append("\n").append(statsLine(locale, product.stats()));
+        }
         return result.toString();
     }
 
-    public InlineKeyboardMarkup sizeKeyboard(Locale locale, List<SizeOffer> sizes) {
+    public String statsLine(Locale locale, ProductSnapshot.AggregateStats stats) {
+        if (stats.avgPrice() == null) {
+            return text(locale, "stats.lineNoAvg", PriceFormat.format(stats.minPrice()),
+                    PriceFormat.format(stats.maxPrice()), stats.offerCount());
+        }
+        return text(locale, "stats.line", PriceFormat.format(stats.minPrice()),
+                PriceFormat.format(stats.avgPrice()), PriceFormat.format(stats.maxPrice()), stats.offerCount());
+    }
+
+    public InlineKeyboardMarkup sizeKeyboard(Locale locale, List<SizeOffer> sizes, int page) {
+        // Shop offers (differing prices) read better one per row with the price shown
+        boolean showPrices = hasVaryingPrices(sizes);
+        List<InlineKeyboardRow> rows = showPrices ? pagedOfferRows(locale, sizes, page) : sizeGridRows(locale, sizes);
+        rows.add(new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home")));
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    private List<InlineKeyboardRow> pagedOfferRows(Locale locale, List<SizeOffer> sizes, int page) {
+        int totalPages = (sizes.size() + OFFERS_PER_PAGE - 1) / OFFERS_PER_PAGE;
+        int currentPage = Math.clamp(page, 0, totalPages - 1);
+        List<InlineKeyboardRow> rows = new ArrayList<>();
+        int from = currentPage * OFFERS_PER_PAGE;
+        for (int sizeIndex = from; sizeIndex < Math.min(from + OFFERS_PER_PAGE, sizes.size()); sizeIndex++) {
+            rows.add(new InlineKeyboardRow(button(sizeButtonLabel(locale, sizes.get(sizeIndex), true), "w:sz:" + sizeIndex)));
+        }
+        if (totalPages > 1) {
+            InlineKeyboardRow navigation = new InlineKeyboardRow();
+            if (currentPage > 0) {
+                navigation.add(button("⬅️", "w:szpg:" + (currentPage - 1)));
+            }
+            navigation.add(button((currentPage + 1) + "/" + totalPages, "w:szpg:" + currentPage));
+            if (currentPage < totalPages - 1) {
+                navigation.add(button("➡️", "w:szpg:" + (currentPage + 1)));
+            }
+            rows.add(navigation);
+        }
+        return rows;
+    }
+
+    private List<InlineKeyboardRow> sizeGridRows(Locale locale, List<SizeOffer> sizes) {
         List<InlineKeyboardRow> rows = new ArrayList<>();
         InlineKeyboardRow currentRow = new InlineKeyboardRow();
         for (int sizeIndex = 0; sizeIndex < sizes.size(); sizeIndex++) {
-            SizeOffer size = sizes.get(sizeIndex);
-            String label = size.inStock() ? size.label() : size.label() + " ✗";
-            currentRow.add(button(label, "w:sz:" + sizeIndex));
+            currentRow.add(button(sizeButtonLabel(locale, sizes.get(sizeIndex), false), "w:sz:" + sizeIndex));
             if (currentRow.size() == SIZE_BUTTONS_PER_ROW) {
                 rows.add(currentRow);
                 currentRow = new InlineKeyboardRow();
@@ -143,8 +216,19 @@ public class TrackerMessages {
         if (!currentRow.isEmpty()) {
             rows.add(currentRow);
         }
-        rows.add(new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home")));
-        return new InlineKeyboardMarkup(rows);
+        return rows;
+    }
+
+    private boolean hasVaryingPrices(List<SizeOffer> sizes) {
+        return sizes.stream().map(SizeOffer::price).distinct().count() > 1;
+    }
+
+    private String sizeButtonLabel(Locale locale, SizeOffer size, boolean showPrice) {
+        String label = displaySize(locale, size.label());
+        if (showPrice) {
+            label += " · " + PriceFormat.format(size.price());
+        }
+        return size.inStock() ? label : label + " ✗";
     }
 
     public String eventsPrompt(Locale locale, String sizeLabel) {
@@ -285,7 +369,12 @@ public class TrackerMessages {
         if (title.length() > ITEM_BUTTON_TITLE_LENGTH) {
             title = title.substring(0, ITEM_BUTTON_TITLE_LENGTH) + "…";
         }
-        String size = SizeOffer.ONE_SIZE_LABEL.equals(item.getSizeLabel()) ? "" : " · " + item.getSizeLabel();
+        String size = switch (item.getSizeLabel()) {
+            case SizeOffer.ONE_SIZE_LABEL -> "";
+            case SizeOffer.MIN_PRICE_LABEL -> " · min";
+            case null -> "";
+            default -> " · " + item.getSizeLabel();
+        };
         return title + size;
     }
 
@@ -304,11 +393,21 @@ public class TrackerMessages {
     }
 
     private String sizeSuffix(Locale locale, String sizeLabel) {
-        return SizeOffer.ONE_SIZE_LABEL.equals(sizeLabel) ? "" : " " + text(locale, "size.suffix", sizeLabel);
+        return switch (sizeLabel) {
+            case SizeOffer.ONE_SIZE_LABEL -> "";
+            case SizeOffer.MIN_PRICE_LABEL -> " " + text(locale, "size.suffix", text(locale, "size.minPrice"));
+            case null -> "";
+            default -> " " + text(locale, "size.suffix", sizeLabel);
+        };
     }
 
     private String displaySize(Locale locale, String sizeLabel) {
-        return SizeOffer.ONE_SIZE_LABEL.equals(sizeLabel) ? text(locale, "size.one") : sizeLabel;
+        return switch (sizeLabel) {
+            case SizeOffer.ONE_SIZE_LABEL -> text(locale, "size.one");
+            case SizeOffer.MIN_PRICE_LABEL -> text(locale, "size.minPrice");
+            case null -> text(locale, "size.one");
+            default -> sizeLabel;
+        };
     }
 
     private InlineKeyboardButton eventButton(Locale locale,

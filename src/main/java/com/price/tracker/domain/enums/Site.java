@@ -6,7 +6,9 @@ import java.util.Optional;
 public enum Site {
     INTERTOP("intertop.ua"),
     ANSWEAR("answear.ua"),
-    STRADIVARIUS("stradivarius.com");
+    STRADIVARIUS("stradivarius.com"),
+    EK("ek.ua"),
+    HOTLINE("hotline.ua");
 
     private final String domain;
 

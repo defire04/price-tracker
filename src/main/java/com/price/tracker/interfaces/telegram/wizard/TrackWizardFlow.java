@@ -4,6 +4,7 @@ import com.price.tracker.domain.entity.TrackedItem;
 import com.price.tracker.domain.enums.TrackedEventType;
 import com.price.tracker.domain.service.notification.AdminNotifier;
 import com.price.tracker.domain.service.tracking.NewTrackingCommand;
+import com.price.tracker.domain.model.ProductSnapshot;
 import com.price.tracker.domain.service.tracking.ProductPreview;
 import com.price.tracker.domain.service.tracking.TrackingService;
 import com.price.tracker.exception.ProductParsingException;
@@ -14,8 +15,10 @@ import com.price.tracker.interfaces.telegram.view.TrackerMessages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -77,11 +80,53 @@ public class TrackWizardFlow {
         state.initProduct(url, preview.site(), preview.product());
         wizardStore.put(chatId, state);
         Integer messageId = replySender.sendKeyboard(chatId,
-                messages.productPreview(locale, preview.product()),
-                messages.sizeKeyboard(locale, preview.product().sizes()));
+                productStepText(locale, state), productStepKeyboard(locale, state));
         if (messageId != null) {
             state.setMenuMessageId(messageId);
         }
+    }
+
+    public void chooseVariant(long chatId, int messageId, int groupIndex, int optionIndex) {
+        Optional<TrackWizardState> found = findOrExpire(chatId, messageId);
+        if (found.isEmpty()) {
+            return;
+        }
+        TrackWizardState state = found.get();
+        if (state.getStep() != TrackWizardStep.CHOOSE_VARIANT || state.getProduct() == null
+                || groupIndex < 0 || groupIndex >= state.getProduct().variants().size()) {
+            return;
+        }
+        List<ProductSnapshot.VariantOption> options = state.getProduct().variants().get(groupIndex).options();
+        if (optionIndex < 0 || optionIndex >= options.size()) {
+            return;
+        }
+        ProductSnapshot.VariantOption option = options.get(optionIndex);
+        if (option.selected() || option.url() == null) {
+            return;
+        }
+        ProductPreview preview;
+        try {
+            preview = trackingService.preview(option.url());
+        } catch (ProductParsingException | UnsupportedSiteException e) {
+            log.warn("Variant preview failed for {}", option.url(), e);
+            adminNotifier.parserFailed(option.url(), e.toString());
+            return;
+        }
+        state.initProduct(option.url(), preview.site(), preview.product());
+        showProductStep(chatId, messageId, state);
+    }
+
+    public void variantsDone(long chatId, int messageId) {
+        Optional<TrackWizardState> found = findOrExpire(chatId, messageId);
+        if (found.isEmpty() || found.get().getProduct() == null) {
+            return;
+        }
+        TrackWizardState state = found.get();
+        if (state.getStep() != TrackWizardStep.CHOOSE_VARIANT) {
+            return;
+        }
+        state.setStep(TrackWizardStep.CHOOSE_SIZE);
+        showSizeStep(chatId, messageId, state);
     }
 
     public boolean handleText(long chatId, int userMessageId, String text) {
@@ -119,6 +164,21 @@ public class TrackWizardFlow {
         state.setSizeLabel(state.getProduct().sizes().get(sizeIndex).label());
         state.setStep(TrackWizardStep.CHOOSE_EVENTS);
         showEventsStep(chatId, messageId, state);
+    }
+
+    public void changeSizePage(long chatId, int messageId, int page) {
+        Optional<TrackWizardState> found = findOrExpire(chatId, messageId);
+        if (found.isEmpty()) {
+            return;
+        }
+        TrackWizardState state = found.get();
+        if (state.getProduct() == null || state.getStep() != TrackWizardStep.CHOOSE_SIZE) {
+            return;
+        }
+        Locale locale = chatLocales.localeOf(chatId);
+        replySender.editMessage(chatId, messageId,
+                messages.productPreview(locale, state.getProduct()),
+                messages.sizeKeyboard(locale, state.getProduct().sizes(), page));
     }
 
     public void toggleEvent(long chatId, int messageId, String eventCode) {
@@ -199,7 +259,7 @@ public class TrackWizardFlow {
             return;
         }
         state.initProduct(url, preview.site(), preview.product());
-        showSizeStep(chatId, state.getMenuMessageId(), state);
+        showProductStep(chatId, state.getMenuMessageId(), state);
     }
 
     private void handleThresholdInput(long chatId, TrackWizardState state, String text) {
@@ -225,12 +285,36 @@ public class TrackWizardFlow {
                 messages.trackingCreated(locale, item), messages.trackingCreatedKeyboard(locale));
     }
 
+    private void showProductStep(long chatId, int messageId, TrackWizardState state) {
+        if (state.getStep() == TrackWizardStep.CHOOSE_VARIANT) {
+            Locale locale = chatLocales.localeOf(chatId);
+            state.setMenuMessageId(messageId);
+            replySender.editMessage(chatId, messageId,
+                    messages.variantPrompt(locale, state.getProduct()),
+                    messages.variantKeyboard(locale, state.getProduct().variants()));
+            return;
+        }
+        showSizeStep(chatId, messageId, state);
+    }
+
+    private String productStepText(Locale locale, TrackWizardState state) {
+        return state.getStep() == TrackWizardStep.CHOOSE_VARIANT
+                ? messages.variantPrompt(locale, state.getProduct())
+                : messages.productPreview(locale, state.getProduct());
+    }
+
+    private InlineKeyboardMarkup productStepKeyboard(Locale locale, TrackWizardState state) {
+        return state.getStep() == TrackWizardStep.CHOOSE_VARIANT
+                ? messages.variantKeyboard(locale, state.getProduct().variants())
+                : messages.sizeKeyboard(locale, state.getProduct().sizes(), 0);
+    }
+
     private void showSizeStep(long chatId, int messageId, TrackWizardState state) {
         Locale locale = chatLocales.localeOf(chatId);
         state.setMenuMessageId(messageId);
         replySender.editMessage(chatId, messageId,
                 messages.productPreview(locale, state.getProduct()),
-                messages.sizeKeyboard(locale, state.getProduct().sizes()));
+                messages.sizeKeyboard(locale, state.getProduct().sizes(), 0));
     }
 
     private void showEventsStep(long chatId, int messageId, TrackWizardState state) {

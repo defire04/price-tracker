@@ -13,6 +13,9 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 public class CallbackDispatcher {
 
     private static final String WIZARD_SIZE_PREFIX = "w:sz:";
+    private static final String WIZARD_SIZE_PAGE_PREFIX = "w:szpg:";
+    private static final String WIZARD_VARIANT_PREFIX = "w:vr:";
+    private static final String WIZARD_VARIANTS_DONE = "w:vrok";
     private static final String WIZARD_EVENT_PREFIX = "w:ev:";
     private static final String WIZARD_CONFIRM = "w:ok";
     private static final String WIZARD_BACK_TO_SIZES = "w:back:sz";
@@ -43,7 +46,16 @@ public class CallbackDispatcher {
         int messageId = callback.getMessage().getMessageId();
         String data = callback.getData();
 
-        if (data.startsWith(WIZARD_SIZE_PREFIX)) {
+        if (data.startsWith(WIZARD_SIZE_PAGE_PREFIX)) {
+            wizardFlow.changeSizePage(chatId, messageId, (int) parseNumber(data.substring(WIZARD_SIZE_PAGE_PREFIX.length())));
+        } else if (data.startsWith(WIZARD_VARIANT_PREFIX)) {
+            String[] indices = data.substring(WIZARD_VARIANT_PREFIX.length()).split(":");
+            if (indices.length == 2) {
+                wizardFlow.chooseVariant(chatId, messageId, (int) parseNumber(indices[0]), (int) parseNumber(indices[1]));
+            }
+        } else if (WIZARD_VARIANTS_DONE.equals(data)) {
+            wizardFlow.variantsDone(chatId, messageId);
+        } else if (data.startsWith(WIZARD_SIZE_PREFIX)) {
             wizardFlow.chooseSize(chatId, messageId, (int) parseNumber(data.substring(WIZARD_SIZE_PREFIX.length())));
         } else if (data.startsWith(WIZARD_EVENT_PREFIX)) {
             wizardFlow.toggleEvent(chatId, messageId, data.substring(WIZARD_EVENT_PREFIX.length()));

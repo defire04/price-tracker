@@ -37,7 +37,7 @@ public class ItemCheckProcessor {
         PriceSnapshot previous = priceSnapshotRepository.findTopByItemIdOrderByCheckedAtDesc(itemId).orElse(null);
         SizeOffer current = resolveTrackedSize(item, freshProduct, previous);
         if (previous != null) {
-            evaluateEvents(item, previous, current);
+            evaluateEvents(item, previous, current, freshProduct.stats());
         }
         Instant now = Instant.now();
         priceSnapshotRepository.save(buildSnapshot(item, current, now));
@@ -55,16 +55,17 @@ public class ItemCheckProcessor {
         return new SizeOffer(item.getSizeLabel(), lastKnownPrice, lastKnownRegular, false);
     }
 
-    private void evaluateEvents(TrackedItem item, PriceSnapshot previous, SizeOffer current) {
+    private void evaluateEvents(TrackedItem item, PriceSnapshot previous, SizeOffer current,
+                                ProductSnapshot.AggregateStats stats) {
         for (TrackedItemEvent event : item.getEvents()) {
             if (!event.isActive()) {
                 continue;
             }
             switch (event.getEventType()) {
-                case RESTOCK -> checkRestock(item, event, previous, current);
-                case PRICE_DROP -> checkPriceDrop(item, previous, current);
-                case PRICE_INCREASE -> checkPriceIncrease(item, previous, current);
-                case DISCOUNT_PERCENT -> checkDiscountThreshold(item, previous, current);
+                case RESTOCK -> checkRestock(item, event, previous, current, stats);
+                case PRICE_DROP -> checkPriceDrop(item, previous, current, stats);
+                case PRICE_INCREASE -> checkPriceIncrease(item, previous, current, stats);
+                case DISCOUNT_PERCENT -> checkDiscountThreshold(item, previous, current, stats);
             }
         }
         boolean anyEventStillActive = item.getEvents().stream().anyMatch(TrackedItemEvent::isActive);
@@ -73,26 +74,33 @@ public class ItemCheckProcessor {
         }
     }
 
-    private void checkRestock(TrackedItem item, TrackedItemEvent event, PriceSnapshot previous, SizeOffer current) {
+    private void checkRestock(TrackedItem item, TrackedItemEvent event, PriceSnapshot previous, SizeOffer current,
+                              ProductSnapshot.AggregateStats stats) {
         if (!previous.isInStock() && current.inStock()) {
-            notify(item, new PriceAlert(item, TrackedEventType.RESTOCK, previous.getPrice(), current.price(), null));
+            notify(item, new PriceAlert(item, TrackedEventType.RESTOCK, previous.getPrice(), current.price(), null,
+                    current.url(), stats));
             event.setActive(false);
         }
     }
 
-    private void checkPriceDrop(TrackedItem item, PriceSnapshot previous, SizeOffer current) {
+    private void checkPriceDrop(TrackedItem item, PriceSnapshot previous, SizeOffer current,
+                                ProductSnapshot.AggregateStats stats) {
         if (current.price().compareTo(previous.getPrice()) < 0) {
-            notify(item, new PriceAlert(item, TrackedEventType.PRICE_DROP, previous.getPrice(), current.price(), null));
+            notify(item, new PriceAlert(item, TrackedEventType.PRICE_DROP, previous.getPrice(), current.price(), null,
+                    current.url(), stats));
         }
     }
 
-    private void checkPriceIncrease(TrackedItem item, PriceSnapshot previous, SizeOffer current) {
+    private void checkPriceIncrease(TrackedItem item, PriceSnapshot previous, SizeOffer current,
+                                    ProductSnapshot.AggregateStats stats) {
         if (current.price().compareTo(previous.getPrice()) > 0) {
-            notify(item, new PriceAlert(item, TrackedEventType.PRICE_INCREASE, previous.getPrice(), current.price(), null));
+            notify(item, new PriceAlert(item, TrackedEventType.PRICE_INCREASE, previous.getPrice(), current.price(), null,
+                    current.url(), stats));
         }
     }
 
-    private void checkDiscountThreshold(TrackedItem item, PriceSnapshot previous, SizeOffer current) {
+    private void checkDiscountThreshold(TrackedItem item, PriceSnapshot previous, SizeOffer current,
+                                        ProductSnapshot.AggregateStats stats) {
         BigDecimal threshold = item.getDiscountThreshold();
         if (threshold == null) {
             return;
@@ -103,7 +111,7 @@ public class ItemCheckProcessor {
                 && previousDiscount.compareTo(threshold) < 0;
         if (crossedThreshold) {
             notify(item, new PriceAlert(item, TrackedEventType.DISCOUNT_PERCENT,
-                    previous.getPrice(), current.price(), currentDiscount));
+                    previous.getPrice(), current.price(), currentDiscount, current.url(), stats));
         }
     }
 

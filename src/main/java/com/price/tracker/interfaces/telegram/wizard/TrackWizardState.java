@@ -26,7 +26,7 @@ public class TrackWizardState {
         this.url = url;
         this.site = site;
         this.product = product;
-        this.step = TrackWizardStep.CHOOSE_SIZE;
+        this.step = product.variants().isEmpty() ? TrackWizardStep.CHOOSE_SIZE : TrackWizardStep.CHOOSE_VARIANT;
     }
 
     public void toggleEvent(TrackedEventType eventType) {

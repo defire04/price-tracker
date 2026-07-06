@@ -9,5 +9,7 @@ public record PriceAlert(TrackedItem item,
                          TrackedEventType type,
                          BigDecimal oldPrice,
                          BigDecimal newPrice,
-                         BigDecimal discountPercent) {
+                         BigDecimal discountPercent,
+                         String offerUrl,
+                         ProductSnapshot.AggregateStats stats) {
 }
