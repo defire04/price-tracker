@@ -7,6 +7,7 @@ import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.LinkPreviewOptions;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
@@ -29,8 +30,22 @@ public class TelegramReplySender {
         send(SendMessage.builder().chatId(chatId).text(text).build());
     }
 
+    /**
+     * Menu messages are HTML: raw urls hide behind short anchors and previews are
+     * off, so the bubble (and keyboard) width stays constant between screens.
+     * Dynamic values must be escaped with HtmlText.escape by the caller.
+     */
     public Integer sendKeyboard(long chatId, String text, InlineKeyboardMarkup keyboard) {
-        return send(SendMessage.builder().chatId(chatId).text(text + WIDTH_ANCHOR).replyMarkup(keyboard).build());
+        return send(SendMessage.builder().chatId(chatId).text(text + WIDTH_ANCHOR)
+                .parseMode("HTML")
+                .linkPreviewOptions(noPreview())
+                .replyMarkup(keyboard).build());
+    }
+
+    private LinkPreviewOptions noPreview() {
+        LinkPreviewOptions options = new LinkPreviewOptions();
+        options.setIsDisabled(true);
+        return options;
     }
 
     public void deleteMessage(long chatId, int messageId) {
@@ -46,6 +61,8 @@ public class TelegramReplySender {
                 .chatId(chatId)
                 .messageId(messageId)
                 .text(text + WIDTH_ANCHOR)
+                .parseMode("HTML")
+                .linkPreviewOptions(noPreview())
                 .replyMarkup(keyboard)
                 .build();
         try {

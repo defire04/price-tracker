@@ -67,7 +67,7 @@ public class TrackerMessages {
     }
 
     public String adminTestReport(Locale locale, String report) {
-        return text(locale, "admin.test.header") + "\n\n" + report;
+        return text(locale, "admin.test.header") + "\n\n" + HtmlText.escape(report);
     }
 
     public String adminCheckRunning(Locale locale) {
@@ -152,7 +152,7 @@ public class TrackerMessages {
     }
 
     private String previewHeader(Locale locale, ProductSnapshot product) {
-        StringBuilder result = new StringBuilder(product.title()).append("\n");
+        StringBuilder result = new StringBuilder(HtmlText.escape(product.title())).append("\n");
         result.append(text(locale, "price.label", PriceFormat.format(product.price())));
         if (product.regularPrice() != null) {
             int discount = PriceFormat.percentOf(product.regularPrice().subtract(product.price()), product.regularPrice());
@@ -232,7 +232,7 @@ public class TrackerMessages {
     }
 
     public String eventsPrompt(Locale locale, String sizeLabel) {
-        return text(locale, "events.prompt", displaySize(locale, sizeLabel));
+        return text(locale, "events.prompt", HtmlText.escape(displaySize(locale, sizeLabel)));
     }
 
     public String eventsPromptWithWarning(Locale locale, String sizeLabel) {
@@ -266,7 +266,7 @@ public class TrackerMessages {
 
     public String trackingCreated(Locale locale, TrackedItem item) {
         return text(locale, "created.title") + "\n"
-                + item.displayTitle() + sizeSuffix(locale, item.getSizeLabel()) + "\n"
+                + HtmlText.escape(item.displayTitle()) + sizeSuffix(locale, item.getSizeLabel()) + "\n"
                 + text(locale, "events.label", formatEvents(locale, item));
     }
 
@@ -310,7 +310,7 @@ public class TrackerMessages {
     public String menuItemText(Locale locale, TrackingDetails details) {
         TrackedItem item = details.item();
         PriceSnapshot lastSnapshot = details.lastSnapshot();
-        StringBuilder result = new StringBuilder(item.displayTitle())
+        StringBuilder result = new StringBuilder(HtmlText.escape(item.displayTitle()))
                 .append(sizeSuffix(locale, item.getSizeLabel())).append("\n");
         if (!item.isActive()) {
             result.append(text(locale, "item.stopped")).append("\n");
@@ -325,7 +325,8 @@ public class TrackerMessages {
             result.append(text(locale, "item.checked", KyivTime.format(lastSnapshot.getCheckedAt()))).append("\n");
         }
         result.append(text(locale, "events.label", formatEvents(locale, item))).append("\n");
-        result.append(item.getUrl());
+        result.append("<a href=\"").append(HtmlText.escape(item.getUrl())).append("\">")
+                .append(text(locale, "item.link")).append("</a>");
         return result.toString();
     }
 
@@ -341,7 +342,7 @@ public class TrackerMessages {
     }
 
     public String renamePrompt(Locale locale, TrackedItem item) {
-        return text(locale, "rename.prompt", item.displayTitle());
+        return text(locale, "rename.prompt", HtmlText.escape(item.displayTitle()));
     }
 
     public InlineKeyboardMarkup renameKeyboard(Locale locale, long itemId) {
@@ -397,7 +398,7 @@ public class TrackerMessages {
             case SizeOffer.ONE_SIZE_LABEL -> "";
             case SizeOffer.MIN_PRICE_LABEL -> " " + text(locale, "size.suffix", text(locale, "size.minPrice"));
             case null -> "";
-            default -> " " + text(locale, "size.suffix", sizeLabel);
+            default -> " " + text(locale, "size.suffix", HtmlText.escape(sizeLabel));
         };
     }
 
