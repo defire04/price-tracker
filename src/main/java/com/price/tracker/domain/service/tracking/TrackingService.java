@@ -4,6 +4,7 @@ import com.price.tracker.domain.entity.PriceSnapshot;
 import com.price.tracker.domain.entity.TrackedItem;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TrackingService {
 
@@ -12,6 +13,10 @@ public interface TrackingService {
     TrackedItem createTracking(long telegramChatId, NewTrackingCommand command);
 
     List<TrackedItem> listActive(long telegramChatId);
+
+    List<TrackedItem> allActiveWithEvents();
+
+    Optional<TrackedItem> findActiveItem(long itemId);
 
     List<TrackedItem> listInactive(long telegramChatId);
 

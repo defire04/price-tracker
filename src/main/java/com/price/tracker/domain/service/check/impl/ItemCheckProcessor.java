@@ -7,40 +7,41 @@ import com.price.tracker.domain.model.SizeOffer;
 import com.price.tracker.domain.enums.TrackedEventType;
 import com.price.tracker.domain.entity.TrackedItem;
 import com.price.tracker.domain.entity.TrackedItemEvent;
-import com.price.tracker.domain.repository.PriceSnapshotRepository;
-import com.price.tracker.domain.repository.TrackedItemRepository;
 import com.price.tracker.domain.service.notification.NotificationSender;
+import com.price.tracker.domain.service.snapshot.PriceSnapshotService;
+import com.price.tracker.domain.service.tracking.TrackingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 
-@Component
-@RequiredArgsConstructor
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class ItemCheckProcessor {
 
-    private final TrackedItemRepository trackedItemRepository;
-    private final PriceSnapshotRepository priceSnapshotRepository;
+    private final TrackingService trackingService;
+    private final PriceSnapshotService priceSnapshotService;
     private final NotificationSender notificationSender;
 
     @Transactional
     public void process(long itemId, ProductSnapshot freshProduct) {
-        TrackedItem item = trackedItemRepository.findById(itemId).orElse(null);
-        if (item == null || !item.isActive()) {
+        TrackedItem item = trackingService.findActiveItem(itemId).orElse(null);
+        if (item == null) {
             return;
         }
-        PriceSnapshot previous = priceSnapshotRepository.findTopByItemIdOrderByCheckedAtDesc(itemId).orElse(null);
+        PriceSnapshot previous = priceSnapshotService.lastOf(itemId).orElse(null);
         SizeOffer current = resolveTrackedSize(item, freshProduct, previous);
         if (previous != null) {
             evaluateEvents(item, previous, current, freshProduct.stats());
         }
         Instant now = Instant.now();
-        priceSnapshotRepository.save(buildSnapshot(item, current, now));
+        priceSnapshotService.record(buildSnapshot(item, current, now));
         item.setLastCheckedAt(now);
     }
 

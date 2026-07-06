@@ -37,15 +37,11 @@ public class TrackingMenuFlow {
     private final AdminAccess adminAccess;
     private final ConcurrentHashMap<Long, Integer> menuMessageIdByChat = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, PendingRename> pendingRenameByChat = new ConcurrentHashMap<>();
-    // Guards against double-tapping the check button while a fetch is running
     private final ConcurrentHashMap.KeySetView<Long, Boolean> itemsBeingChecked = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<Long, Integer> chartMessageIdByChat = new ConcurrentHashMap<>();
 
-    /**
-     * The chart replaces the menu with a photo message, and Telegram cannot edit
-     * a photo into text - so navigation away from the chart deletes it and sends
-     * a fresh text menu. Returns the message id that actually shows the content.
-     */
+    // Telegram cannot edit a photo message into text, so when the current menu
+    // is the chart photo it gets deleted and replaced with a fresh text message
     private int show(long chatId, int messageId, String text, InlineKeyboardMarkup keyboard) {
         Integer chartMessageId = chartMessageIdByChat.get(chatId);
         if (chartMessageId != null && chartMessageId == messageId) {

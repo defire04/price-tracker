@@ -35,7 +35,6 @@ public class AdminMenuFlow {
     private final TrackerMessages messages;
     private final ChatLocales chatLocales;
     private final TrackerProperties trackerProperties;
-    // Playwright fetches take tens of seconds - one run of each kind at a time
     private final AtomicBoolean testRunning = new AtomicBoolean();
     private final AtomicBoolean checkRunning = new AtomicBoolean();
 

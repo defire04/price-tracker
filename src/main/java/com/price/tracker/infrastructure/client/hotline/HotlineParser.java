@@ -23,16 +23,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Hotline aggregator: one "size" is one shop offer plus a virtual MIN_PRICE
- * offer. The full offer list is dug out of the server-rendered NUXT state;
- * JSON-LD AggregateOffer provides the market overview.
+ * Hotline aggregator: one "size" is one shop offer. The full offer list exists
+ * only inside the server-rendered NUXT state, not in the visible HTML.
  */
 @Component
 @RequiredArgsConstructor
 public class HotlineParser implements SiteParser {
 
     private static final String HOTLINE_ORIGIN = "https://hotline.ua";
-    // "новый"/"новий"; anything else (уценённый, б/у) is not comparable stock
     private static final String NEW_CONDITION_PREFIX = "нов";
 
     private final TrackerProperties trackerProperties;
@@ -63,14 +61,14 @@ public class HotlineParser implements SiteParser {
         if (productJsonLd == null) {
             throw new ProductParsingException("No JSON-LD product found: " + url);
         }
-        String title = productJsonLd.path("name").asText(page.title());
+        String title = productJsonLd.path("name").asString(page.title());
         JsonNode aggregateOffer = productJsonLd.path("offers");
         JsonNode lowPrice = aggregateOffer.path("lowPrice");
         if (!lowPrice.isNumber()) {
             throw new ProductParsingException("Hotline JSON-LD offer has no numeric lowPrice: " + url);
         }
         BigDecimal price = lowPrice.decimalValue();
-        boolean inStock = aggregateOffer.path("availability").asText("").endsWith("InStock");
+        boolean inStock = aggregateOffer.path("availability").asString("").endsWith("InStock");
         JsonNode highPrice = aggregateOffer.path("highPrice");
         ProductSnapshot.AggregateStats stats = new ProductSnapshot.AggregateStats(
                 price,

@@ -8,9 +8,9 @@ import com.price.tracker.domain.enums.TrackedEventType;
 import com.price.tracker.domain.model.PriceAlert;
 import com.price.tracker.domain.model.ProductSnapshot;
 import com.price.tracker.domain.model.SizeOffer;
-import com.price.tracker.domain.repository.PriceSnapshotRepository;
-import com.price.tracker.domain.repository.TrackedItemRepository;
 import com.price.tracker.domain.service.notification.NotificationSender;
+import com.price.tracker.domain.service.snapshot.PriceSnapshotService;
+import com.price.tracker.domain.service.tracking.TrackingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,9 +37,9 @@ class ItemCheckProcessorTest {
     private static final String SIZE = "M";
 
     @Mock
-    private TrackedItemRepository trackedItemRepository;
+    private TrackingService trackingService;
     @Mock
-    private PriceSnapshotRepository priceSnapshotRepository;
+    private PriceSnapshotService priceSnapshotService;
     @Mock
     private NotificationSender notificationSender;
 
@@ -77,9 +77,9 @@ class ItemCheckProcessorTest {
     }
 
     private void givenItemAndPrevious(TrackedItem item, PriceSnapshot previous) {
-        when(trackedItemRepository.findById(ITEM_ID)).thenReturn(Optional.of(item));
-        when(priceSnapshotRepository.findTopByItemIdOrderByCheckedAtDesc(ITEM_ID)).thenReturn(Optional.ofNullable(previous));
-        processor = new ItemCheckProcessor(trackedItemRepository, priceSnapshotRepository, notificationSender);
+        when(trackingService.findActiveItem(ITEM_ID)).thenReturn(Optional.of(item));
+        when(priceSnapshotService.lastOf(ITEM_ID)).thenReturn(Optional.ofNullable(previous));
+        processor = new ItemCheckProcessor(trackingService, priceSnapshotService, notificationSender);
     }
 
     @Test
@@ -166,7 +166,7 @@ class ItemCheckProcessorTest {
         processor.process(ITEM_ID, fresh);
 
         ArgumentCaptor<PriceSnapshot> saved = ArgumentCaptor.forClass(PriceSnapshot.class);
-        verify(priceSnapshotRepository).save(saved.capture());
+        verify(priceSnapshotService).record(saved.capture());
         assertThat(saved.getValue().isInStock()).isFalse();
         assertThat(saved.getValue().getPrice()).isEqualByComparingTo(new BigDecimal("1000"));
     }

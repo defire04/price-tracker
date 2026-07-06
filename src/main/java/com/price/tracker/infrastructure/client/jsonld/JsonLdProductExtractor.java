@@ -37,7 +37,7 @@ public class JsonLdProductExtractor {
         if (!price.isNumber()) {
             throw new ProductParsingException("JSON-LD offer has no numeric price: " + url);
         }
-        boolean inStock = offer.path("availability").asText("").endsWith("InStock");
+        boolean inStock = offer.path("availability").asString("").endsWith("InStock");
         return List.of(new SizeOffer(SizeOffer.ONE_SIZE_LABEL, price.decimalValue(), null, inStock));
     }
 
@@ -59,6 +59,6 @@ public class JsonLdProductExtractor {
     }
 
     private boolean isProduct(JsonNode node) {
-        return "Product".equals(node.path("@type").asText(""));
+        return "Product".equals(node.path("@type").asString(""));
     }
 }

@@ -43,11 +43,11 @@ public class NuxtDataExtractor {
     }
 
     private SizeOffer toSizeOffer(JsonNode sizeObject, JsonNode flatArray) {
-        String label = resolve(sizeObject.get("label"), flatArray).asText();
+        String label = resolve(sizeObject.get("label"), flatArray).asString();
         if (label.isBlank()) {
             label = SizeOffer.ONE_SIZE_LABEL;
         }
-        String availability = resolve(sizeObject.get("availability"), flatArray).asText();
+        String availability = resolve(sizeObject.get("availability"), flatArray).asString();
         JsonNode quantityLimit = resolve(sizeObject.get("quantityLimit"), flatArray);
         boolean inStock = AVAILABLE_ONLINE_VALUE.equals(availability)
                 && quantityLimit != null && quantityLimit.asInt(0) > 0;

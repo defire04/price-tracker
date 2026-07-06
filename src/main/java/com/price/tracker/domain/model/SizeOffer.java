@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 public record SizeOffer(String label, BigDecimal price, BigDecimal regularPrice, boolean inStock, String url) {
 
     public static final String ONE_SIZE_LABEL = "ONE_SIZE";
-    // Aggregator sites: virtual offer tracking the lowest price across all shops
     public static final String MIN_PRICE_LABEL = "MIN_PRICE";
 
     public SizeOffer(String label, BigDecimal price, BigDecimal regularPrice, boolean inStock) {

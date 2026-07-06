@@ -120,7 +120,6 @@ public class HotlineStateExtractor {
         return values;
     }
 
-    // Split call arguments on top-level commas, honouring strings and nesting
     private List<String> splitTopLevel(String source) {
         List<String> parts = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -186,10 +185,9 @@ public class HotlineStateExtractor {
         }
     }
 
-    // The string literals are JSON-compatible (unicode and quote escapes)
     private String decodeStringLiteral(String quoted) {
         try {
-            return objectMapper.readTree(quoted).asText();
+            return objectMapper.readTree(quoted).asString();
         } catch (RuntimeException e) {
             return null;
         }

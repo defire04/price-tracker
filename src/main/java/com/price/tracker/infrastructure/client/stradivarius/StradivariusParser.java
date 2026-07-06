@@ -58,12 +58,12 @@ public class StradivariusParser implements SiteParser {
         if (productJsonLd == null) {
             throw new ProductParsingException("No JSON-LD product found: " + url);
         }
-        String title = productJsonLd.path("name").asText(page.title());
+        String title = productJsonLd.path("name").asString(page.title());
         BigDecimal price = extractPrice(productJsonLd, url);
         BigDecimal regularPrice = extractRegularPrice(page, price);
         List<SizeOffer> sizes = extractSizes(page, price, regularPrice);
         if (sizes.isEmpty()) {
-            boolean inStock = productJsonLd.path("offers").path("availability").asText("").endsWith("InStock");
+            boolean inStock = productJsonLd.path("offers").path("availability").asString("").endsWith("InStock");
             sizes = List.of(new SizeOffer(SizeOffer.ONE_SIZE_LABEL, price, regularPrice, inStock));
         }
         boolean anySizeInStock = sizes.stream().anyMatch(SizeOffer::inStock);
@@ -72,7 +72,7 @@ public class StradivariusParser implements SiteParser {
 
     // JSON-LD offer price is a string here ("1899"), unlike the numeric prices on other sites
     private BigDecimal extractPrice(JsonNode productJsonLd, String url) {
-        String price = productJsonLd.path("offers").path("price").asText("");
+        String price = productJsonLd.path("offers").path("price").asString("");
         if (price.isEmpty()) {
             throw new ProductParsingException("Stradivarius JSON-LD offer has no price: " + url);
         }
@@ -88,7 +88,6 @@ public class StradivariusParser implements SiteParser {
         if (oldPrice == null) {
             return null;
         }
-        // Rendered as "1,599 грн" - keep the digits only, prices are integer UAH
         String digits = oldPrice.text().replaceAll("\\D", "");
         if (digits.isEmpty()) {
             return null;

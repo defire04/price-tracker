@@ -61,7 +61,7 @@ public class AnswearParser implements SiteParser {
             return jsonLdFallback(page, url);
         }
         JsonNode product = productData.get("product");
-        String title = product.path("name").asText(page.title());
+        String title = product.path("name").asString(page.title());
         BigDecimal price = extractPrice(product, url);
         BigDecimal regularPrice = extractRegularPrice(product, price);
         List<SizeOffer> sizes = extractSizes(product.path("allSizes"), price, regularPrice);
@@ -125,11 +125,11 @@ public class AnswearParser implements SiteParser {
     private List<SizeOffer> extractSizes(JsonNode allSizes, BigDecimal price, BigDecimal regularPrice) {
         List<SizeOffer> sizes = new ArrayList<>();
         for (JsonNode size : allSizes) {
-            String label = size.path("name").asText("").trim();
+            String label = size.path("name").asString("").trim();
             if (label.isEmpty()) {
                 label = SizeOffer.ONE_SIZE_LABEL;
             }
-            String availability = size.path("variation").path("availability").asText("");
+            String availability = size.path("variation").path("availability").asString("");
             boolean inStock = IN_STOCK_AVAILABILITY_VALUES.contains(availability);
             sizes.add(new SizeOffer(label, price, regularPrice, inStock));
         }
@@ -141,7 +141,7 @@ public class AnswearParser implements SiteParser {
         if (productJsonLd == null) {
             throw new ProductParsingException("Neither react-query state nor JSON-LD product found: " + url);
         }
-        String title = productJsonLd.path("name").asText(page.title());
+        String title = productJsonLd.path("name").asString(page.title());
         List<SizeOffer> sizes = jsonLdProductExtractor.oneSizeOffers(productJsonLd, url);
         SizeOffer offer = sizes.getFirst();
         return new ProductSnapshot(title, offer.price(), offer.regularPrice(), offer.inStock(), sizes);

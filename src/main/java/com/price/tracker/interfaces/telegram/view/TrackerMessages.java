@@ -30,7 +30,6 @@ public class TrackerMessages {
 
     private static final int SIZE_BUTTONS_PER_ROW = 4;
     private static final int ITEM_BUTTON_TITLE_LENGTH = 32;
-    // Aggregators return dozens of shop offers - page them instead of one huge keyboard
     private static final int OFFERS_PER_PAGE = 5;
     private static final int VARIANT_BUTTONS_PER_ROW = 3;
 
@@ -177,7 +176,6 @@ public class TrackerMessages {
     }
 
     public InlineKeyboardMarkup sizeKeyboard(Locale locale, List<SizeOffer> sizes, int page) {
-        // Shop offers (differing prices) read better one per row with the price shown
         boolean showPrices = hasVaryingPrices(sizes);
         List<InlineKeyboardRow> rows = showPrices ? pagedOfferRows(locale, sizes, page) : sizeGridRows(locale, sizes);
         rows.add(new InlineKeyboardRow(button(text(locale, "btn.backToMenu"), "m:home")));

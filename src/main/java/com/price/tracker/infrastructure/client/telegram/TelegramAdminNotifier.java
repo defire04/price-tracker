@@ -1,9 +1,8 @@
 package com.price.tracker.infrastructure.client.telegram;
 
 import com.price.tracker.config.TrackerProperties;
-import com.price.tracker.domain.entity.User;
-import com.price.tracker.domain.repository.UserRepository;
 import com.price.tracker.domain.service.notification.AdminNotifier;
+import com.price.tracker.domain.service.user.UserService;
 import com.price.tracker.util.BotLanguage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,7 @@ public class TelegramAdminNotifier implements AdminNotifier {
 
     private final TelegramClient telegramClient;
     private final MessageSource messageSource;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final TrackerProperties trackerProperties;
 
     @Override
@@ -44,11 +43,7 @@ public class TelegramAdminNotifier implements AdminNotifier {
     }
 
     private Locale adminLocale(long adminChatId) {
-        User admin = userRepository.findByTelegramChatId(adminChatId).orElse(null);
-        if (admin == null) {
-            return BotLanguage.toLocale(BotLanguage.UKRAINIAN);
-        }
-        return BotLanguage.toLocale(BotLanguage.resolve(admin.getPreferredLanguage(), admin.getLanguageCode()));
+        return BotLanguage.toLocale(userService.resolveLanguage(adminChatId));
     }
 
     private String truncate(String error) {

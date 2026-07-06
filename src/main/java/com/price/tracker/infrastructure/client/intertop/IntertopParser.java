@@ -82,7 +82,7 @@ public class IntertopParser implements SiteParser {
 
     private String extractTitle(Document page, JsonNode productJsonLd) {
         if (productJsonLd != null && productJsonLd.hasNonNull("name")) {
-            return productJsonLd.get("name").asText();
+            return productJsonLd.get("name").asString();
         }
         return page.title();
     }

@@ -8,7 +8,7 @@ import com.price.tracker.domain.enums.TrackedEventType;
 import com.price.tracker.domain.entity.TrackedItem;
 import com.price.tracker.domain.entity.TrackedItemEvent;
 import com.price.tracker.domain.entity.User;
-import com.price.tracker.domain.repository.PriceSnapshotRepository;
+import com.price.tracker.domain.service.snapshot.PriceSnapshotService;
 import com.price.tracker.domain.repository.TrackedItemRepository;
 import com.price.tracker.domain.service.parser.SiteParserRegistry;
 import com.price.tracker.domain.service.tracking.NewTrackingCommand;
@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +34,7 @@ public class TrackingServiceImpl implements TrackingService {
     private final SiteParserRegistry parserRegistry;
     private final UserService userService;
     private final TrackedItemRepository trackedItemRepository;
-    private final PriceSnapshotRepository priceSnapshotRepository;
+    private final PriceSnapshotService priceSnapshotService;
 
     @Override
     public ProductPreview preview(String url) {
@@ -51,7 +52,7 @@ public class TrackingServiceImpl implements TrackingService {
         Instant now = Instant.now();
         TrackedItem item = buildItem(user, command, chosenSize, now);
         trackedItemRepository.save(item);
-        priceSnapshotRepository.save(buildSnapshot(item, chosenSize, now));
+        priceSnapshotService.record(buildSnapshot(item, chosenSize, now));
         return item;
     }
 
@@ -59,6 +60,19 @@ public class TrackingServiceImpl implements TrackingService {
     @Transactional(readOnly = true)
     public List<TrackedItem> listActive(long telegramChatId) {
         return trackedItemRepository.findActiveByChatIdWithEvents(telegramChatId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TrackedItem> allActiveWithEvents() {
+        return trackedItemRepository.findAllActiveWithEvents();
+    }
+
+    // joins the caller's read-write transaction: the check cycle mutates the item
+    @Override
+    @Transactional
+    public Optional<TrackedItem> findActiveItem(long itemId) {
+        return trackedItemRepository.findById(itemId).filter(TrackedItem::isActive);
     }
 
     @Override
@@ -72,7 +86,7 @@ public class TrackingServiceImpl implements TrackingService {
     public TrackingDetails details(long telegramChatId, long itemId) {
         TrackedItem item = trackedItemRepository.findByIdAndChatIdWithEvents(itemId, telegramChatId)
                 .orElseThrow(() -> new TrackingNotFoundException(itemId));
-        PriceSnapshot lastSnapshot = priceSnapshotRepository.findTopByItemIdOrderByCheckedAtDesc(itemId).orElse(null);
+        PriceSnapshot lastSnapshot = priceSnapshotService.lastOf(itemId).orElse(null);
         return new TrackingDetails(item, lastSnapshot);
     }
 
@@ -81,7 +95,7 @@ public class TrackingServiceImpl implements TrackingService {
     public List<PriceSnapshot> priceHistory(long telegramChatId, long itemId) {
         trackedItemRepository.findByIdAndUserTelegramChatId(itemId, telegramChatId)
                 .orElseThrow(() -> new TrackingNotFoundException(itemId));
-        return priceSnapshotRepository.findAllByItemIdOrderByCheckedAtAsc(itemId);
+        return priceSnapshotService.historyOf(itemId);
     }
 
     @Override

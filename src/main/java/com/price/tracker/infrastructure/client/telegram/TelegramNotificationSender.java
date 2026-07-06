@@ -22,9 +22,9 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Locale;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class TelegramNotificationSender implements NotificationSender {
 
     private final TelegramClient telegramClient;
