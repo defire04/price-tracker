@@ -1,5 +1,25 @@
-# Prod override: run the image built by CI instead of building locally.
-# Usage: docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+# Prod: app only. Postgres and pgAdmin are shared for all projects,
+# they live in /opt/postgres on the server and expose the docker network "infra".
+# Usage: docker compose -f docker-compose.prod.yaml up -d
 services:
   app:
     image: ghcr.io/defire04/price-tracker:latest
+    container_name: price_tracker_app
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/price_tracker
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks: [infra]
+
+networks:
+  infra:
+    external: true

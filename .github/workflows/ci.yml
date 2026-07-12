@@ -54,8 +54,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: |
-          cp docker-compose.yaml docker-compose.prod.yaml /opt/price-tracker/
+          cp docker-compose.prod.yaml /opt/price-tracker/
           cd /opt/price-tracker
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull app
-          docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+          docker compose -f docker-compose.prod.yaml pull app
+          docker compose -f docker-compose.prod.yaml up -d
           docker image prune -f
