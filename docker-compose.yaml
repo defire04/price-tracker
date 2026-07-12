@@ -26,8 +26,8 @@ services:
       POSTGRES_DB: price_tracker
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: devpass
-      TZ: UTC
-      PGTZ: UTC
+      TZ: Europe/Kyiv
+      PGTZ: Europe/Kyiv
     ports:
       - "5433:5432"
     volumes:
@@ -62,5 +62,5 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      o: bind
+      o: bindХ
       device: ${DOCKER_VOLUMES_DIR}/price_tracker_pgadmin

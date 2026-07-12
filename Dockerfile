@@ -12,9 +12,11 @@ FROM eclipse-temurin:25-jre-noble
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/target/*.jar app.jar
-# Chromium + system deps for Playwright (Answear is behind Cloudflare); CLI is run from inside the fat jar
+# Chromium headless shell + system deps for Playwright (Answear/Stradivarius are behind
+# Cloudflare/Akamai); headless launches use only the shell, the full browser is not needed.
+# The CLI is run from inside the fat jar.
 RUN java -cp app.jar -Dloader.main=com.microsoft.playwright.CLI \
-    org.springframework.boot.loader.launch.PropertiesLauncher install --with-deps chromium \
+    org.springframework.boot.loader.launch.PropertiesLauncher install --with-deps --only-shell chromium \
     && rm -rf /var/lib/apt/lists/*
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
