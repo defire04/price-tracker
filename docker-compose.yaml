@@ -24,8 +24,8 @@ services:
     container_name: price_tracker_postgres
     environment:
       POSTGRES_DB: price_tracker
-      POSTGRES_USER: dev
-      POSTGRES_PASSWORD: devpass
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       TZ: Europe/Kyiv
       PGTZ: Europe/Kyiv
     ports:
@@ -33,7 +33,7 @@ services:
     volumes:
       - price_tracker_pg:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d price_tracker"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d price_tracker"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -42,8 +42,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: price_tracker_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.dev
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5051:80"
     volumes:
@@ -62,5 +62,5 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      o: bindХ
+      o: bind
       device: ${DOCKER_VOLUMES_DIR}/price_tracker_pgadmin

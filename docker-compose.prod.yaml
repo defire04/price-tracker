@@ -1,0 +1,5 @@
+# Prod override: run the image built by CI instead of building locally.
+# Usage: docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+services:
+  app:
+    image: ghcr.io/defire04/price-tracker:latest
