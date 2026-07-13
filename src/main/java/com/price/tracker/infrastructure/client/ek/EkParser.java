@@ -41,7 +41,8 @@ public class EkParser implements SiteParser {
     private static final String PRICES_URL_TEMPLATE = "https://ek.ua/ua/ek-item.php?resolved_name_=%s&view_=prices&order_=price";
     // The shop link is only present inside the onmouseover JS of the offer row
     private static final Pattern SHOP_REDIRECT_URL = Pattern.compile("https://ek\\.ua/[^\"]*clcp\\.php[^\"]*");
-    private static final String SHOP_ROW_PRICE_SELECTOR = "td.where-buy-price";
+    // Regular products use td.where-buy-price rows, laptop-like configurations td.conf-prices-price-big
+    private static final String SHOP_ROW_PRICE_SELECTOR = "td.where-buy-price, td.conf-prices-price-big";
     private static final String SHOP_NAME_SELECTOR = "a.it-shop";
     private static final String MODIFICATION_GROUP_SELECTOR = "div.m-c-f1-pl--inline";
     private static final String COLOR_SWATCH_SELECTOR = "div.c-d[title]";

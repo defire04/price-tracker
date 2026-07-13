@@ -47,6 +47,19 @@ class EkParserTest {
         assertThat(cheapestShop.url()).contains("clcp.php");
     }
 
+    // Laptop-like configuration pages use conf-prices-* markup instead of where-buy-price
+    @Test
+    void when_confPricesMarkup_buildsShopOffers() {
+        ProductSnapshot product = parser.parse(productPage(),
+                List.of(Fixtures.page("ek-prices-conf.html", "https://ek.ua/")), PRODUCT_URL, null);
+
+        assertThat(product.sizes().size()).isGreaterThan(10);
+        SizeOffer cheapestShop = product.sizes().get(1);
+        assertThat(cheapestShop.label()).isEqualTo("Enko.com.ua");
+        assertThat(cheapestShop.price()).isEqualByComparingTo(new BigDecimal("87972"));
+        assertThat(cheapestShop.url()).contains("clcp.php");
+    }
+
     @Test
     void when_colorFilterActive_takesStatsFromFilteredOffers() {
         ProductSnapshot product = parser.parse(productPage(),
