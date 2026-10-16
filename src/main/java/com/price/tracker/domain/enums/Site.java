@@ -8,7 +8,8 @@ public enum Site {
     ANSWEAR("answear.ua"),
     STRADIVARIUS("stradivarius.com"),
     EK("ek.ua"),
-    HOTLINE("hotline.ua");
+    HOTLINE("hotline.ua"),
+    ZARA("zara.com");
 
     private final String domain;
 

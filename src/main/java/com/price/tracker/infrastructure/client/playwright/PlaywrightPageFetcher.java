@@ -62,7 +62,10 @@ public class PlaywrightPageFetcher {
             playwright = Playwright.create();
         }
         if (browser == null || !browser.isConnected()) {
-            browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+            // Full Chromium in new headless mode: Akamai on Zara denies the lighter headless shell
+            browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(true)
+                    .setChannel("chromium"));
         }
     }
 

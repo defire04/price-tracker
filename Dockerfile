@@ -12,11 +12,14 @@ FROM eclipse-temurin:25-jre-noble
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/target/*.jar app.jar
-# Chromium headless shell + system deps for Playwright (Answear/Stradivarius are behind
-# Cloudflare/Akamai); headless launches use only the shell, the full browser is not needed.
+# Full Chromium + system deps for Playwright (Answear, Intertop, Stradivarius, Zara are behind
+# Cloudflare/Akamai). Not the lighter headless shell: Akamai on Zara denies it.
 # The CLI is run from inside the fat jar.
 RUN java -cp app.jar -Dloader.main=com.microsoft.playwright.CLI \
-    org.springframework.boot.loader.launch.PropertiesLauncher install --with-deps --only-shell chromium \
+    org.springframework.boot.loader.launch.PropertiesLauncher install --with-deps chromium \
     && rm -rf /var/lib/apt/lists/*
+# Playwright.create() otherwise downloads full Chromium, Firefox and WebKit (~500 MB) on the
+# first fetch in every new container, which blocks the bot for minutes after each deploy
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
