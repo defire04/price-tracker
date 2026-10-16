@@ -6,6 +6,7 @@ import com.price.tracker.domain.model.ProductSnapshot;
 import com.price.tracker.domain.model.SizeOffer;
 import com.price.tracker.domain.service.parser.SiteParser;
 import com.price.tracker.exception.ProductParsingException;
+import com.price.tracker.exception.ProductUnavailableException;
 import com.price.tracker.infrastructure.client.jsonld.JsonLdProductExtractor;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
@@ -65,7 +66,8 @@ public class HotlineParser implements SiteParser {
         JsonNode aggregateOffer = productJsonLd.path("offers");
         JsonNode lowPrice = aggregateOffer.path("lowPrice");
         if (!lowPrice.isNumber()) {
-            throw new ProductParsingException("Hotline JSON-LD offer has no numeric lowPrice: " + url);
+            // no shop sells it right now: Hotline drops the price from the aggregate offer
+            throw new ProductUnavailableException("Hotline JSON-LD offer has no numeric lowPrice: " + url);
         }
         BigDecimal price = lowPrice.decimalValue();
         boolean inStock = aggregateOffer.path("availability").asString("").endsWith("InStock");

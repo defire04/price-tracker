@@ -1,12 +1,13 @@
 package com.price.tracker.infrastructure.client.intertop;
 
-import com.price.tracker.config.TrackerProperties;
+import com.microsoft.playwright.PlaywrightException;
 import com.price.tracker.domain.model.ProductSnapshot;
 import com.price.tracker.domain.enums.Site;
 import com.price.tracker.domain.model.SizeOffer;
 import com.price.tracker.domain.service.parser.SiteParser;
 import com.price.tracker.exception.ProductParsingException;
 import com.price.tracker.infrastructure.client.jsonld.JsonLdProductExtractor;
+import com.price.tracker.infrastructure.client.playwright.PlaywrightPageFetcher;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,7 +15,6 @@ import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 
-import java.io.IOException;
 import java.util.List;
 
 @Component
@@ -22,8 +22,10 @@ import java.util.List;
 public class IntertopParser implements SiteParser {
 
     private static final String NUXT_DATA_SELECTOR = "script#__NUXT_DATA__";
+    // Cloudflare answers plain HTTP with a JS challenge (403), so the page is loaded in a browser
+    private static final String READY_EXPRESSION = "() => document.querySelector('" + NUXT_DATA_SELECTOR + "') !== null";
 
-    private final TrackerProperties trackerProperties;
+    private final PlaywrightPageFetcher pageFetcher;
     private final NuxtDataExtractor nuxtDataExtractor;
     private final JsonLdProductExtractor jsonLdProductExtractor;
 
@@ -34,16 +36,13 @@ public class IntertopParser implements SiteParser {
 
     @Override
     public ProductSnapshot fetch(String url) {
-        Document page;
+        String html;
         try {
-            page = Jsoup.connect(url)
-                    .userAgent(trackerProperties.http().userAgent())
-                    .timeout(trackerProperties.http().timeoutMs())
-                    .get();
-        } catch (IOException e) {
+            html = pageFetcher.fetchHtml(url, READY_EXPRESSION);
+        } catch (PlaywrightException e) {
             throw new ProductParsingException("Failed to load page: " + url, e);
         }
-        return parse(page, url);
+        return parse(Jsoup.parse(html, url), url);
     }
 
     ProductSnapshot parse(Document page, String url) {

@@ -35,4 +35,17 @@ class IntertopParserTest {
                 .containsExactly("39", "40", "41", "42", "43", "44");
         assertThat(product.sizes()).noneMatch(SizeOffer::inStock);
     }
+
+    @Test
+    void when_pageLoadedThroughCloudflareInBrowser_parsesSizes() {
+        ProductSnapshot product = parser.parse(
+                Fixtures.page("intertop-product-cf.html", "https://intertop.ua/"), "https://intertop.ua/test");
+
+        assertThat(product.title()).isEqualTo("Штани Marc O’Polo модель 523134010134-898");
+        assertThat(product.price()).isEqualByComparingTo(new BigDecimal("3399"));
+        assertThat(product.regularPrice()).isEqualByComparingTo(new BigDecimal("6799"));
+        assertThat(product.inStock()).isTrue();
+        assertThat(product.sizes()).hasSize(13);
+        assertThat(product.findSize("32/34")).get().extracting(SizeOffer::inStock).isEqualTo(false);
+    }
 }

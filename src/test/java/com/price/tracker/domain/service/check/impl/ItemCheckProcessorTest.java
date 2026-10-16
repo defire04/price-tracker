@@ -170,4 +170,18 @@ class ItemCheckProcessorTest {
         assertThat(saved.getValue().isInStock()).isFalse();
         assertThat(saved.getValue().getPrice()).isEqualByComparingTo(new BigDecimal("1000"));
     }
+
+    @Test
+    void when_productHasNoSizes_keepsLastPriceAndGoesOutOfStock() {
+        TrackedItem item = anItem(TrackedEventType.RESTOCK);
+        givenItemAndPrevious(item, previousSnapshot("900", true));
+
+        processor.process(ITEM_ID, new ProductSnapshot(null, null, null, false, List.of()));
+
+        ArgumentCaptor<PriceSnapshot> recorded = ArgumentCaptor.forClass(PriceSnapshot.class);
+        verify(priceSnapshotService).record(recorded.capture());
+        assertThat(recorded.getValue().getPrice()).isEqualByComparingTo(new BigDecimal("900"));
+        assertThat(recorded.getValue().isInStock()).isFalse();
+        verify(notificationSender, never()).send(eq(CHAT_ID), any(PriceAlert.class));
+    }
 }

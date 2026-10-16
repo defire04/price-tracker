@@ -9,6 +9,7 @@ import com.price.tracker.domain.service.check.PriceCheckService;
 import com.price.tracker.domain.service.notification.AdminNotifier;
 import com.price.tracker.domain.service.parser.SiteParser;
 import com.price.tracker.domain.service.parser.SiteParserRegistry;
+import com.price.tracker.exception.ProductUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PriceCheckServiceImpl implements PriceCheckService {
+
+    /**
+     * No sizes at all: every tracked size counts as vanished, so the item keeps its last
+     * price and goes out of stock (and RESTOCK fires once offers come back).
+     */
+    private static final ProductSnapshot UNAVAILABLE = new ProductSnapshot(null, null, null, false, List.of());
 
     private final TrackingService trackingService;
     private final SiteParserRegistry parserRegistry;
@@ -50,6 +57,9 @@ public class PriceCheckServiceImpl implements PriceCheckService {
         ProductSnapshot freshProduct;
         try {
             freshProduct = parser.fetch(item.getUrl());
+        } catch (ProductUnavailableException e) {
+            log.info("Item {} unavailable: {}", itemId, e.getMessage());
+            freshProduct = UNAVAILABLE;
         } catch (Exception e) {
             log.error("On-demand check failed for item {} url {}", itemId, item.getUrl(), e);
             adminNotifier.parserFailed(item.getUrl(), e.toString());
@@ -75,6 +85,9 @@ public class PriceCheckServiceImpl implements PriceCheckService {
         ProductSnapshot freshProduct;
         try {
             freshProduct = parser.fetch(url);
+        } catch (ProductUnavailableException e) {
+            log.info("Product unavailable: {}", e.getMessage());
+            freshProduct = UNAVAILABLE;
         } catch (Exception e) {
             log.error("Price check failed for url {}", url, e);
             adminNotifier.parserFailed(url, e.toString());

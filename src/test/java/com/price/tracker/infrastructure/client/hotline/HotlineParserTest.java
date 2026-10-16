@@ -2,13 +2,16 @@ package com.price.tracker.infrastructure.client.hotline;
 
 import com.price.tracker.domain.model.ProductSnapshot;
 import com.price.tracker.domain.model.SizeOffer;
+import com.price.tracker.exception.ProductUnavailableException;
 import com.price.tracker.infrastructure.client.jsonld.JsonLdProductExtractor;
 import com.price.tracker.testsupport.Fixtures;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class HotlineParserTest {
 
@@ -37,5 +40,19 @@ class HotlineParserTest {
         assertThat(cheapestShop.label()).isEqualTo("DIGITALSHOP");
         assertThat(cheapestShop.price()).isEqualByComparingTo(new BigDecimal("4479"));
         assertThat(cheapestShop.url()).startsWith("https://hotline.ua/go/price/");
+    }
+
+    @Test
+    void when_noShopOffers_throwsUnavailable() {
+        // happened 27-30.09.2026: the aggregate offer came without lowPrice while nobody sold the chair
+        String html = """
+                <html><head><script type="application/ld+json">
+                {"@context":"https://schema.org/","@type":"Product","name":"Comfort Seating Ergohuman Elite 2 Black",
+                 "offers":{"@type":"AggregateOffer","priceCurrency":"UAH","offerCount":0,
+                 "availability":"https://schema.org/OutOfStock"}}
+                </script></head><body></body></html>""";
+
+        assertThatThrownBy(() -> parser.parse(Jsoup.parse(html, "https://hotline.ua/"), "https://hotline.ua/test"))
+                .isInstanceOf(ProductUnavailableException.class);
     }
 }
